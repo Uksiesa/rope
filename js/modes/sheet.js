@@ -233,7 +233,7 @@ const SheetView = {
         ]),
         el('ul', { class: 'skillgroup-body' }, items.map(sk =>
           el('li', { class: 'sg-row' }, [
-            el('span', { class: 'sg-skill', text: sk.name }),
+            el('span', { class: 'sg-skill', text: sk.display || sk.name }),
             el('span', { class: 'sg-bar' }, [
               el('span', { class: 'sg-bar-fill', style: 'width:' + clamp(sk.total / 1.2, 0, 100) + '%' })
             ]),

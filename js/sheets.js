@@ -157,6 +157,32 @@ const asNum = v => {
 };
 const hasNum = v => String(v).trim() !== '' && /\d/.test(String(v));
 
+/** Lomakkeen taitonimet ovat kirjanpitomuotoisia ("Lista 6 - Sound Control (50)").
+    Näytölle riisutaan järjestysnumerot ja luokittelevat etuliitteet pois; alkuperäinen
+    nimi säilyy kentässä name ja näkyy taidon tiedoissa. */
+function skillDisplayName(name) {
+  let m;
+  if ((m = name.match(/^Lista\s*\d+\s*-\s*(.+?)\s*(?:\(\d+\))?\s*$/i))) return m[1];
+  if ((m = name.match(/^Ase\s*\d+\s*-\s*(.+)$/i))) return m[1].trim();
+  if ((m = name.match(/^Kieli\s*\d+\s*-\s*(suullinen|kirjallinen)\s+(.+)$/i))) {
+    return m[2].trim() + ' — ' + (/kirjallinen/i.test(m[1]) ? 'kirjoitus' : 'puhe');
+  }
+  return name;
+}
+
+/** Lomakkeen taitonimet ovat kirjanpitomuotoisia ("Lista 6 - Sound Control (50)").
+    Näytölle riisutaan järjestysnumerot ja luokittelevat etuliitteet pois; alkuperäinen
+    nimi säilyy kentässä name ja näkyy taidon tiedoissa. */
+function skillDisplayName(name) {
+  let m;
+  if ((m = name.match(/^Lista\s*\d+\s*-\s*(.+?)\s*(?:\(\d+\))?\s*$/i))) return m[1];
+  if ((m = name.match(/^Ase\s*\d+\s*-\s*(.+)$/i))) return m[1].trim();
+  if ((m = name.match(/^Kieli\s*\d+\s*-\s*(suullinen|kirjallinen)\s+(.+)$/i))) {
+    return m[2].trim() + ' — ' + (/kirjallinen/i.test(m[1]) ? 'kirjoitus' : 'puhe');
+  }
+  return name;
+}
+
 function slug(s) {
   return norm(s).replace(/[^a-z0-9åäö]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
@@ -563,6 +589,7 @@ function parseSkillsGrid(g) {
     const skill = {
       id: 'sk-' + slug(name),
       name: name,
+      display: skillDisplayName(name),
       category: category,
       ranks: ranks,
       total: total,
@@ -576,6 +603,7 @@ function parseSkillsGrid(g) {
         skills.push({
           id: 'sk-' + slug(label),
           name: label,
+          display: label,
           category: category,
           ranks: ranks,
           total: sub,

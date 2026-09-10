@@ -118,6 +118,15 @@ const CONFIG = {
     ]
   },
 
+  /* ---------- Avoin heitto ----------
+     RoleMasterin d100 on avoin: korkea heitto heitetään uudelleen ja lisätään,
+     matala heitetään uudelleen ja vähennetään. Appi ei päätä puolestasi milloin
+     ketjua jatketaan — se vain laskee summan ja ehdottaa jatkoa näillä rajoilla. */
+  openEnded: {
+    high: 96,   // tästä ylöspäin ehdotetaan uutta heittoa, joka lisätään
+    low: 5      // tästä alaspäin ehdotetaan uutta heittoa, joka vähennetään (0 = pois)
+  },
+
   /* ---------- Taikuus ---------- */
   magic: {
     ppWarn: 0.5,

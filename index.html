@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -130,6 +130,7 @@
           <option value="defense">+ Puolustus (DB)</option>
         </select>
       </div>
+      <div class="roll-chain" id="battleChain"></div>
       <div class="roll-row">
         <input type="number" id="battleMod" inputmode="numeric" class="roll-input" placeholder="muut modit">
         <button class="ghost" id="battleClear">Tyhjennä</button>
@@ -251,6 +252,7 @@
         <input type="number" id="actionRoll" inputmode="numeric" class="roll-input" placeholder="d100">
         <input type="number" id="actionMod" inputmode="numeric" class="roll-input" placeholder="modi">
       </div>
+      <div class="roll-chain" id="actionChain"></div>
       <div class="roll-total" id="actionTotal">
         <span class="roll-total-label">Yhteensä</span>
         <b>—</b>
@@ -392,25 +394,25 @@
 </main>
 
 <nav class="tabbar" id="tabbar">
-  <button class="tab" data-view="battle"><span class="tab-ico">⚔</span><span>Taistelu</span></button>
+  <button class="tab" data-view="sheet"><span class="tab-ico">📜</span><span>Hahmo</span></button>
   <button class="tab" data-view="adventure"><span class="tab-ico">🧭</span><span>Matka</span></button>
   <button class="tab" data-view="action"><span class="tab-ico">🎲</span><span>Teot</span></button>
+  <button class="tab" data-view="battle"><span class="tab-ico">⚔</span><span>Taistelu</span></button>
   <button class="tab" data-view="magic"><span class="tab-ico">✦</span><span>Taika</span></button>
-  <button class="tab" data-view="sheet"><span class="tab-ico">📜</span><span>Hahmo</span></button>
 </nav>
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=5"></script>
-<script src="js/seed-data.js?v=5"></script>
-<script src="js/util.js?v=5"></script>
-<script src="js/store.js?v=5"></script>
-<script src="js/sheets.js?v=5"></script>
-<script src="js/modes/battle.js?v=5"></script>
-<script src="js/modes/adventure.js?v=5"></script>
-<script src="js/modes/action.js?v=5"></script>
-<script src="js/modes/magic.js?v=5"></script>
-<script src="js/modes/sheet.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/config.js?v=6"></script>
+<script src="js/seed-data.js?v=6"></script>
+<script src="js/util.js?v=6"></script>
+<script src="js/store.js?v=6"></script>
+<script src="js/sheets.js?v=6"></script>
+<script src="js/modes/battle.js?v=6"></script>
+<script src="js/modes/adventure.js?v=6"></script>
+<script src="js/modes/action.js?v=6"></script>
+<script src="js/modes/magic.js?v=6"></script>
+<script src="js/modes/sheet.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

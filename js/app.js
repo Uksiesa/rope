@@ -44,7 +44,7 @@ const App = {
 
     let saved = null;
     try { saved = localStorage.getItem('tm.view'); } catch (e) { /* ohitetaan */ }
-    this.show(saved || 'battle');
+    this.show(saved || 'sheet');
   },
 
   show(view) {

@@ -13,11 +13,16 @@ offline-käyttöä varten. Lomakkeen luku on kuvattu tiedostossa
 
 | Välilehti | Sisältö |
 |---|---|
-| **Taistelu** | Osumapisteet, taistelukierrokset ja tilavaikutukset (tainnutus laskee alas, verenvuoto vähentää hp:tä kierroksen lopussa), aseen OB jaettuna hyökkäykseen ja parryyn, DB:n komponentit togglattavina, heittolaskuri |
+| **Hahmo** | Hahmon kuva, ominaisuudet, killat, aseet, taidot, varusteet kantopaikoittain, tausta ja datan hallinta |
 | **Matka** | Kampanjakalenteri, kuunkierto, matkapäivät, muona, rahat neljänä kolikkotyyppinä, kielten opiskelutunnit ja päivä päivältä täyttyvä päiväkirja |
 | **Teot** | Taidon bonus + käsin syötetty heitto. Haku, kategoriasuodattimet ja puhehaku |
+| **Taistelu** | Osumapisteet, taistelukierrokset ja tilavaikutukset (tainnutus laskee alas, verenvuoto vähentää hp:tä kierroksen lopussa), aseen OB jaettuna hyökkäykseen ja parryyn, DB:n komponentit togglattavina, heittolaskuri |
 | **Taika** | Voimapisteet (toimivat kuten osumapisteet) ja loitsut **taikalistoittain** ryhmiteltynä, listan heittobonus otsikossa. Loitsiminen vähentää pisteet; listan tason ylittävät loitsut näkyvät lukittuina |
-| **Hahmo** | Hahmon kuva, ominaisuudet, killat, aseet, taidot, varusteet kantopaikoittain, tausta ja datan hallinta |
+
+**Avoin heitto**: kun heität 96+ tai 05−, heittokentän alle ilmestyy korostettu
+"+ avoin heitto" -nappi. Se siirtää heiton ketjuun ja tyhjentää kentän seuraavaa
+varten; appi laskee suunnan (korkea lisätään, matala vähennetään) ja näyttää
+ketjun auki: `97 + 96 = 193`. Rajat säädetään `js/config.js` → `openEnded`.
 
 ## Käyttö kehityksessä
 
@@ -61,6 +66,7 @@ näyttää vanhaa koodia.
 | Kolikkotyypit ja vaihtokurssi | `js/config.js` → `coins`, `coinRatio` |
 | Muonan lähtömäärä ja varoitusraja | `js/config.js` → `food` |
 | Kielten tuntitavoitteet | appissa, Matka-välilehden "Tavoite"-nappi |
+| Avoimen heiton rajat | `js/config.js` → `openEnded` |
 | Varusteiden kantopaikat | `js/config.js` → `slots` |
 | Tilavaikutusten pikavalinnat | `js/config.js` → `combat.effectPresets` |
 | Datalähde (seed ↔ sheets) | `js/config.js` → `data.source` |

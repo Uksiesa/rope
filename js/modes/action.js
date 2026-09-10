@@ -5,6 +5,7 @@ const Action = {
 
   filter: { text: '', category: null },
   selectedId: null,
+  chain: [],          // avoimen heiton osaheitot
   recognition: null,
   listening: false,
 
@@ -34,6 +35,17 @@ const Action = {
     ['#actionRoll', '#actionMod'].forEach(sel =>
       $(sel).addEventListener('input', () => this.renderTotal()));
 
+    $('#actionChain').addEventListener('click', e => {
+      if (!e.target.closest('button[data-addroll]')) return;
+      const v = numOf($('#actionRoll'), null);
+      if (!Number.isFinite(v)) return;
+      haptic();
+      this.chain.push(v);
+      $('#actionRoll').value = '';
+      this.renderTotal();
+      $('#actionRoll').focus();
+    });
+
     $('#btnMic').addEventListener('click', () => this.toggleMic());
     this.setupSpeech();
   },
@@ -53,7 +65,9 @@ const Action = {
     return this.skills().filter(s => {
       if (this.filter.category && s.category !== this.filter.category) return false;
       if (!q) return true;
-      return norm(s.name).includes(q) || norm(s.category).includes(q);
+      return norm(s.display || s.name).includes(q) ||
+             norm(s.name).includes(q) ||
+             norm(s.category).includes(q);
     });
   },
 
@@ -62,6 +76,7 @@ const Action = {
     Store.update(s => {
       s.recentSkills = [id].concat((s.recentSkills || []).filter(x => x !== id)).slice(0, 5);
     });
+    this.chain = [];
     $('#actionRoll').value = '';
     $('#actionMod').value = '';
     this.renderSelected();
@@ -125,7 +140,7 @@ const Action = {
 
   skillRow(s) {
     return el('li', { class: 'skill-row' + (this.selectedId === s.id ? ' active' : ''), 'data-id': s.id }, [
-      el('span', { class: 'skill-name', text: s.name }),
+      el('span', { class: 'skill-name', text: s.display || s.name }),
       el('span', { class: 'skill-ranks', text: s.ranks ? s.ranks + ' r' : '' }),
       el('b', { class: 'skill-bonus', text: signed(s.total) })
     ]);
@@ -136,9 +151,13 @@ const Action = {
     const s = this.skills().find(x => x.id === this.selectedId);
     if (!s) { card.classList.add('hidden'); return; }
     card.classList.remove('hidden');
-    $('#selName').textContent = s.name;
-    $('#selCat').textContent = [s.category, s.ranks ? s.ranks + ' tasoa' : '', s.note || '']
-      .filter(Boolean).join(' · ');
+    const shown = s.display || s.name;
+    $('#selName').textContent = shown;
+    $('#selCat').textContent = [
+      s.category,
+      s.ranks ? s.ranks + ' tasoa' : '',
+      s.note || (shown !== s.name ? 'Lomakkeella: ' + s.name : '')
+    ].filter(Boolean).join(' · ');
     $('#selBonus').textContent = signed(s.total);
 
     const bd = $('#selBreakdown');
@@ -155,18 +174,24 @@ const Action = {
   renderTotal() {
     const s = this.skills().find(x => x.id === this.selectedId);
     if (!s) return;
-    const rollRaw = $('#actionRoll').value.trim();
+    const pending = numOf($('#actionRoll'), null);
+    const rolls = this.chain.concat(Number.isFinite(pending) ? [pending] : []);
     const mod = numOf($('#actionMod'), 0);
     const out = $('#actionTotal').querySelector('b');
     const formula = $('#actionFormula');
-    if (rollRaw === '') {
+
+    renderRollChain($('#actionChain'), this.chain, pending);
+
+    if (!rolls.length) {
       out.textContent = '—';
       formula.textContent = 'Bonus ' + signed(s.total) + ' — syötä heitto';
       return;
     }
-    const roll = numOf(rollRaw, 0);
-    out.textContent = roll + s.total + mod;
-    formula.textContent = roll + ' (heitto) ' + signed(s.total) + ' (' + s.name + ')' +
+    const roll = rollChainTotal(rolls);
+    out.textContent = fmtNum(roll + s.total + mod);
+    formula.textContent =
+      (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
+      ' (heitto) ' + signed(s.total) + ' (' + (s.display || s.name) + ')' +
       (mod ? ' ' + signed(mod) + ' (modi)' : '');
   },
 
@@ -215,7 +240,7 @@ const Action = {
     let best = null, bestScore = 0.45;
     this.skills().forEach(s => {
       alternatives.forEach(alt => {
-        const score = similarity(alt, s.name);
+        const score = Math.max(similarity(alt, s.name), similarity(alt, s.display || s.name));
         if (score > bestScore) { bestScore = score; best = s; }
       });
     });

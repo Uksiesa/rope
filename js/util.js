@@ -26,6 +26,9 @@ function signed(n) {
   return v < 0 ? '−' + Math.abs(v) : '+' + v;
 }
 
+/** Numero näytölle: typografinen miinus, ei ASCII-viiva. */
+function fmtNum(n) { return String(n).replace('-', '−'); }
+
 /** Numeerinen kenttä turvallisesti luvuksi. */
 function numOf(input, fallback) {
   const v = parseInt(String(input && input.value !== undefined ? input.value : input).trim(), 10);
@@ -66,6 +69,55 @@ function similarity(a, b) {
     if (i >= 0) { hits++; pool.splice(i, 1); }
   });
   return 2 * hits / (ba.length + bb.length);
+}
+
+/* ---------- Avoin heitto ---------- */
+
+/** Ketjun suunnan määrää ensimmäinen heitto: matala aloitus vähentää, muut lisäävät. */
+function rollDirection(rolls) {
+  const low = CONFIG.openEnded.low;
+  return (rolls.length && low > 0 && rolls[0] <= low) ? -1 : 1;
+}
+
+/** Onko heitto sellainen, että RoleMasterissa heitetään uudelleen? */
+function isOpenEnded(value) {
+  const oe = CONFIG.openEnded;
+  return value >= oe.high || (oe.low > 0 && value <= oe.low);
+}
+
+/** Ketjun yhteisarvo, esim. [98, 43] -> 141 ja [3, 67] -> -64. */
+function rollChainTotal(rolls) {
+  const dir = rollDirection(rolls);
+  return rolls.reduce((sum, r, i) => sum + (i === 0 ? r : dir * r), 0);
+}
+
+/** Ketju luettavana tekstinä: "98 + 43" tai "3 − 67". */
+function rollChainText(rolls) {
+  const sign = rollDirection(rolls) < 0 ? ' − ' : ' + ';
+  return rolls.map((r, i) => (i === 0 ? fmtNum(r) : sign + r)).join('');
+}
+
+/** Piirtää heittoketjun ja jatkonapin. Nappi näkyy vasta kun kentässä on heitto,
+    ja korostuu kun heitto on avoin. */
+function renderRollChain(container, chain, pending) {
+  const hasPending = Number.isFinite(pending);
+  const rolls = chain.concat(hasPending ? [pending] : []);
+  container.innerHTML = '';
+  if (!rolls.length) { container.classList.add('hidden'); return; }
+  container.classList.remove('hidden');
+
+  if (rolls.length > 1) {
+    container.appendChild(el('span', { class: 'chain-text',
+      text: rollChainText(rolls) + ' = ' + fmtNum(rollChainTotal(rolls)) }));
+  }
+  if (hasPending) {
+    const open = isOpenEnded(rolls[rolls.length - 1]);
+    container.appendChild(el('button', {
+      class: 'chain-add' + (open ? ' open' : ''),
+      'data-addroll': '1',
+      text: open ? '+ avoin heitto' : '+ heitto'
+    }));
+  }
 }
 
 /** Kielen opiskeluraidan avain kertyvässä datassa. */

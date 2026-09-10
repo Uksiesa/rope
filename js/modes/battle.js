@@ -4,6 +4,7 @@
 const Battle = {
 
   justFreed: false,   // näytetään "voit toimia taas" seuraavaan toimintoon asti
+  chain: [],          // avoimen heiton osaheitot, viimeisin on syöttökentässä
 
   init() {
     $('#weaponSelect').addEventListener('change', e => {
@@ -104,7 +105,19 @@ const Battle = {
 
     ['#battleRoll', '#battleMod'].forEach(sel => $(sel).addEventListener('input', () => this.renderRoll()));
     $('#rollTarget').addEventListener('change', () => this.renderRoll());
+    $('#battleChain').addEventListener('click', e => {
+      if (!e.target.closest('button[data-addroll]')) return;
+      const v = numOf($('#battleRoll'), null);
+      if (!Number.isFinite(v)) return;
+      haptic();
+      this.chain.push(v);
+      $('#battleRoll').value = '';
+      this.renderRoll();
+      $('#battleRoll').focus();
+    });
+
     $('#battleClear').addEventListener('click', () => {
+      this.chain = [];
       $('#battleRoll').value = '';
       $('#battleMod').value = '';
       this.renderRoll();
@@ -321,19 +334,24 @@ const Battle = {
     const base = target === 'attack' ? st.attack : st.dbTotal;
     const baseLabel = target === 'attack' ? 'hyökkäys' : 'DB';
 
-    const rollRaw = $('#battleRoll').value.trim();
+    const pending = numOf($('#battleRoll'), null);
+    const rolls = this.chain.concat(Number.isFinite(pending) ? [pending] : []);
     const mod = numOf($('#battleMod'), 0);
     const out = $('#battleTotal').querySelector('b');
     const formula = $('#battleFormula');
 
-    if (rollRaw === '') {
+    renderRollChain($('#battleChain'), this.chain, pending);
+
+    if (!rolls.length) {
       out.textContent = '—';
       formula.textContent = baseLabel + ' ' + signed(base) + ' — syötä heitto';
       return;
     }
-    const roll = numOf(rollRaw, 0);
-    out.textContent = roll + base + mod;
-    formula.textContent = roll + ' (heitto) ' + signed(base) + ' (' + baseLabel + ')' +
+    const roll = rollChainTotal(rolls);
+    out.textContent = fmtNum(roll + base + mod);
+    formula.textContent =
+      (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
+      ' (heitto) ' + signed(base) + ' (' + baseLabel + ')' +
       (mod ? ' ' + signed(mod) + ' (modi)' : '');
   }
 };

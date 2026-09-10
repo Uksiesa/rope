@@ -111,6 +111,11 @@ Otsikkorivi tunnistetaan solusta `Skill/Capability`; sen alta luetaan sarakkeet:
   erillisiksi taidoiksi (Hiivi +32, Piileskele +21). Alkuperäinen merkintä näkyy
   taidon tiedoissa. Pelkkä nimen kauttaviiva ei jaa taitoa
   (`Eläinten käsittely/koulutus` pysyy yhtenä).
+- **Näyttönimet**: lomakkeen kirjanpitonimistä riisutaan järjestysnumerot appin
+  listoihin — `Lista 6 - Sound Control (50)` → `Sound Control`,
+  `Ase 1 - Quarterstaff` → `Quarterstaff`,
+  `Kieli 2 - kirjallinen D'Hara` → `D'Hara — kirjoitus`. Alkuperäinen nimi säilyy
+  kentässä `name` ja näkyy taidon tiedoissa, joten lomakkeen rivin löytää aina.
 - Rivit joiden nimi alkaa `#` (esim. `#N/A`) ohitetaan.
 - `Lista N - <nimi> (50)` -taidot muodostavat loitsulistat: taidon bonus on listan
   heittobonus ja `Current` kertoo montako tasoa listaa on kehitetty.

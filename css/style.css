@@ -769,3 +769,27 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
   border-radius: var(--radius-sm);
   object-position: center 42%;
 }
+
+
+/* ================= Avoin heitto ================= */
+
+.roll-chain {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: -2px 0 8px;
+}
+.chain-text {
+  font-family: Georgia, serif; font-size: 14px; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.chain-add {
+  min-height: 36px; padding: 6px 12px;
+  font-size: 13px;
+  background: transparent; color: var(--text-dim);
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+}
+.chain-add.open {
+  border-style: solid; border-color: var(--gold-soft);
+  color: var(--gold); background: #2c2415;
+  animation: throb 1.6s ease-in-out infinite;
+}
