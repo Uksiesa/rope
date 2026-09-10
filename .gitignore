@@ -1,0 +1,6 @@
+# Paikalliset kehitystyökalut
+.claude/
+
+# Käyttöjärjestelmän roskatiedostot
+Thumbs.db
+.DS_Store

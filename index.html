@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Totuuden Miekka — kampanjatyökalu</title>
+<meta name="theme-color" content="#12100d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Totuus">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css?v=5">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-id">
+    <span class="char-name" id="topName">—</span>
+    <span class="char-sub" id="topSub">—</span>
+  </div>
+  <button class="icon-btn" id="btnRefresh" title="Päivitä data">⟳</button>
+</header>
+
+<main id="views">
+
+  <!-- ============================ TAISTELU ============================ -->
+  <section class="view" id="view-battle">
+
+    <div class="status-banner hidden" id="statusBanner"></div>
+
+    <div class="card hp-card">
+      <div class="hp-head">
+        <span class="hp-label">Osumapisteet</span>
+        <span class="hp-num"><b id="hpCur">0</b><span>/</span><span id="hpMax">0</span></span>
+      </div>
+      <div class="hp-bar"><div class="hp-fill" id="hpFill"></div></div>
+      <div class="quick-row">
+        <button data-hp="-10">−10</button>
+        <button data-hp="-5">−5</button>
+        <button data-hp="-1">−1</button>
+        <button data-hp="1">+1</button>
+        <button data-hp="5">+5</button>
+        <button class="ghost full" data-hp="full">Täydet</button>
+      </div>
+      <div class="hp-penalty" id="hpPenalty"></div>
+    </div>
+
+    <!-- Kierrokset ja tilavaikutukset -->
+    <div class="card round-card">
+      <div class="card-head">
+        <h2>Kierros</h2>
+        <b class="big-num" id="roundNum">1</b>
+      </div>
+      <div class="quick-row">
+        <button class="primary full" id="btnNextRound">Kierros loppuu →</button>
+        <button class="ghost" id="btnPrevRound">← Edellinen</button>
+        <button class="ghost" id="btnResetRounds">Uusi taistelu</button>
+      </div>
+
+      <ul class="effect-list" id="effectList"></ul>
+
+      <div class="effect-add">
+        <div class="effect-add-row">
+          <span class="ea-label">Tainnutus</span>
+          <input type="number" id="stunRounds" class="mini-input" inputmode="numeric" value="2" min="1">
+          <span class="ea-unit">kierrosta</span>
+          <button class="primary" data-add="stun">Lisää</button>
+        </div>
+        <div class="effect-add-row">
+          <span class="ea-label">Verenvuoto</span>
+          <input type="number" id="bleedAmount" class="mini-input" inputmode="numeric" value="1" min="1">
+          <span class="ea-unit">hp / kierros</span>
+          <button class="primary" data-add="bleed">Lisää</button>
+        </div>
+        <div class="chip-row" id="effectPresets"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Ase</h2>
+        <select id="weaponSelect" class="select"></select>
+      </div>
+
+      <div class="split-total">
+        <span>Jaettava pooli (OB)</span>
+        <b id="poolTotal">0</b>
+      </div>
+
+      <div class="split-readout">
+        <div class="split-side atk">
+          <span class="split-label">Hyökkäys</span>
+          <b id="atkValue">0</b>
+        </div>
+        <div class="split-side def">
+          <span class="split-label">Parry → DB</span>
+          <b id="parryValue">0</b>
+        </div>
+      </div>
+      <input type="range" id="splitSlider" min="0" max="100" value="0" step="5" class="slider">
+      <div class="slider-ticks"><span>kaikki hyökkäykseen</span><span>kaikki parryyn</span></div>
+      <div class="quick-row" id="splitQuick">
+        <button data-split="0">0 %</button>
+        <button data-split="25">25 %</button>
+        <button data-split="50">50 %</button>
+        <button data-split="75">75 %</button>
+        <button data-split="100">100 %</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Puolustus (DB)</h2>
+        <b class="big-num" id="dbTotal">0</b>
+      </div>
+      <p class="hint">Kytke komponentti pois, jos menetät sen kesken taistelun.</p>
+      <ul class="comp-list" id="dbComponents"></ul>
+      <div class="db-sum"><span>DB:n omat komponentit</span><b id="dbBase">0</b></div>
+      <div class="db-sum"><span>Parrysta</span><b id="dbParry">0</b></div>
+    </div>
+
+    <div class="card roll-card">
+      <div class="card-head"><h2>Heitto</h2></div>
+      <div class="roll-row">
+        <input type="number" id="battleRoll" inputmode="numeric" class="roll-input" placeholder="d100">
+        <select id="rollTarget" class="select">
+          <option value="attack">+ Hyökkäys</option>
+          <option value="defense">+ Puolustus (DB)</option>
+        </select>
+      </div>
+      <div class="roll-row">
+        <input type="number" id="battleMod" inputmode="numeric" class="roll-input" placeholder="muut modit">
+        <button class="ghost" id="battleClear">Tyhjennä</button>
+      </div>
+      <div class="roll-total" id="battleTotal">
+        <span class="roll-total-label">Yhteensä</span>
+        <b>—</b>
+      </div>
+      <div class="roll-formula" id="battleFormula"></div>
+    </div>
+  </section>
+
+  <!-- ============================ MATKA ============================ -->
+  <section class="view" id="view-adventure">
+    <div class="card date-card">
+      <div class="date-main">
+        <div class="date-day" id="calDay">—</div>
+        <div class="date-rest">
+          <div class="date-month" id="calMonth">—</div>
+          <div class="date-year" id="calYear">—</div>
+        </div>
+        <div class="moon-block">
+          <div class="moon" id="moonGraphic" aria-hidden="true"></div>
+          <div class="moon-name" id="moonName">—</div>
+        </div>
+      </div>
+      <div class="date-foot">
+        <span>Matkapäivä <b id="travelDay">0</b></span>
+        <span id="moonCountdown"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Seuraava päivä</h2></div>
+      <p class="hint">Valitse montako ateriaa syötiin — muonaa kuluu vastaavasti ja merkintä menee päiväkirjaan.</p>
+      <div class="day-actions">
+        <button class="primary" data-advance="1">+1 pv · 1 ateria</button>
+        <button class="primary" data-advance="2">+1 pv · 2 ateriaa</button>
+        <button class="ghost" data-advance="0">+1 pv · paasto</button>
+      </div>
+      <button class="ghost wide" id="dayBack">← Peru päivä</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Muona</h2>
+        <b class="big-num" id="foodCount">0</b>
+      </div>
+      <div class="food-bar"><div class="food-fill" id="foodFill"></div></div>
+      <div class="quick-row">
+        <button data-food="-1">−1</button>
+        <button data-food="1">+1</button>
+        <button data-food="5">+5</button>
+        <button data-food="10">+10</button>
+        <input type="number" id="foodSet" inputmode="numeric" class="mini-input" placeholder="aseta">
+      </div>
+      <div class="hint" id="foodDays"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Rahat</h2></div>
+      <ul class="coin-list" id="coinList"></ul>
+      <div class="db-sum"><span>Yhteensä</span><b id="coinTotal">—</b></div>
+      <div class="quick-row">
+        <button class="ghost" id="coinNormalize">Vaihda ylöspäin</button>
+        <button class="ghost" id="coinSpendToggle">Maksa…</button>
+      </div>
+      <div class="convert-box hidden" id="spendBox">
+        <div class="quick-row">
+          <input type="number" id="spendAmount" inputmode="numeric" class="mini-input" placeholder="määrä">
+          <select id="spendTier" class="select"></select>
+        </div>
+        <div class="quick-row">
+          <input type="text" id="spendNote" class="search-input" placeholder="mistä maksettiin?">
+          <button class="primary" id="spendConfirm">Maksa</button>
+        </div>
+        <div class="chip-row" id="spendLabels"></div>
+        <div class="hint" id="spendHint"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Kielten opiskelu</h2></div>
+      <ul class="lang-list" id="langList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Päiväkirja</h2>
+        <span class="weight-tag" id="logSummary">—</span>
+      </div>
+      <p class="hint">Jokainen päivä kirjautuu automaattisesti: ateriat, opiskelutunnit ja ostokset.</p>
+      <ul class="log-list" id="logList"></ul>
+      <button class="ghost wide hidden" id="logMore">Näytä koko päiväkirja</button>
+    </div>
+  </section>
+
+  <!-- ============================ TEOT ============================ -->
+  <section class="view" id="view-action">
+    <div class="card search-card">
+      <div class="search-row">
+        <input type="search" id="skillSearch" class="search-input" placeholder="Hae taitoa…" autocomplete="off">
+        <button class="icon-btn mic" id="btnMic" title="Puhehaku">🎙</button>
+      </div>
+      <div class="chip-row" id="catChips"></div>
+      <div class="hint" id="micStatus"></div>
+    </div>
+
+    <div class="card selected-skill hidden" id="selectedCard">
+      <div class="sel-head">
+        <div>
+          <div class="sel-name" id="selName">—</div>
+          <div class="sel-cat" id="selCat">—</div>
+        </div>
+        <b class="big-num" id="selBonus">0</b>
+      </div>
+      <div class="sel-breakdown" id="selBreakdown"></div>
+      <div class="roll-row">
+        <input type="number" id="actionRoll" inputmode="numeric" class="roll-input" placeholder="d100">
+        <input type="number" id="actionMod" inputmode="numeric" class="roll-input" placeholder="modi">
+      </div>
+      <div class="roll-total" id="actionTotal">
+        <span class="roll-total-label">Yhteensä</span>
+        <b>—</b>
+      </div>
+      <div class="roll-formula" id="actionFormula"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 id="skillListTitle">Taidot</h2></div>
+      <ul class="skill-list" id="skillList"></ul>
+    </div>
+  </section>
+
+  <!-- ============================ TAIKA ============================ -->
+  <section class="view" id="view-magic">
+    <div class="card hp-card">
+      <div class="hp-head">
+        <span class="hp-label">Voimapisteet</span>
+        <span class="hp-num"><b id="ppCur">0</b><span>/</span><span id="ppMax">0</span></span>
+      </div>
+      <div class="hp-bar"><div class="hp-fill pp" id="ppFill"></div></div>
+      <div class="quick-row">
+        <button data-pp="-5">−5</button>
+        <button data-pp="-3">−3</button>
+        <button data-pp="-1">−1</button>
+        <button data-pp="1">+1</button>
+        <button data-pp="5">+5</button>
+        <button class="ghost full" data-pp="full">Täydet</button>
+      </div>
+      <div class="hp-penalty" id="ppNote"></div>
+    </div>
+
+    <div class="card selected-skill hidden" id="spellCard">
+      <div class="sel-head">
+        <div>
+          <div class="sel-name" id="spellName">—</div>
+          <div class="sel-cat" id="spellMeta">—</div>
+        </div>
+        <b class="big-num" id="spellCost">0</b>
+      </div>
+      <ul class="kv-list compact" id="spellDetails"></ul>
+      <p class="bio" id="spellNote"></p>
+      <button class="primary wide" id="btnCast">Loitsi</button>
+    </div>
+
+    <div class="card search-card">
+      <input type="search" id="spellSearch" class="search-input wide-input" placeholder="Hae loitsua…" autocomplete="off">
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 id="spellListTitle">Loitsut</h2></div>
+      <div id="spellLevels"></div>
+    </div>
+  </section>
+
+  <!-- ============================ HAHMO ============================ -->
+  <section class="view" id="view-sheet">
+    <div class="hero">
+      <img id="heroPortrait" class="hero-portrait hidden" alt="Hahmon kuva">
+      <div class="hero-sigil">✦</div>
+      <h1 class="hero-name" id="sheetName">—</h1>
+      <div class="hero-sub" id="sheetSub">—</div>
+      <div class="hero-bars">
+        <div class="hero-bar">
+          <span class="hb-label">Osumapisteet</span>
+          <div class="hb-track"><div class="hb-fill hp" id="sheetHpFill"></div></div>
+          <span class="hb-val" id="sheetHpVal">—</span>
+        </div>
+        <div class="hero-bar" id="sheetPpRow">
+          <span class="hb-label">Voimapisteet</span>
+          <div class="hb-track"><div class="hb-fill pp" id="sheetPpFill"></div></div>
+          <span class="hb-val" id="sheetPpVal">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="card">
+      <div class="card-head"><h2>Killat</h2></div>
+      <ul class="guild-list" id="guildList"></ul>
+    </div>
+
+    <div class="card" id="rrCard">
+      <div class="card-head"><h2>Vastustusheitot</h2></div>
+      <ul class="rr-list" id="rrList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Aseet ja puolustus</h2></div>
+      <ul class="gear-list" id="combatList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Taidot</h2></div>
+      <div id="sheetSkills"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Varusteet</h2>
+        <span class="weight-tag" id="invWeight">—</span>
+      </div>
+      <p class="hint">Kantopaikan voi vaihtaa suoraan listasta — muutos tallentuu kertyvään dataan.</p>
+      <div id="invGroups"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Tausta</h2></div>
+      <p class="bio" id="bioText"></p>
+      <ul class="kv-list" id="bioKv"></ul>
+      <div id="sheetNotes"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Data ja tallennus</h2></div>
+
+      <h3 class="sub-head">Hahmodata — Google Sheets</h3>
+      <ul class="kv-list" id="sourceKv"></ul>
+      <button class="ghost wide" id="btnRefresh2">Päivitä Sheetsistä</button>
+
+      <h3 class="sub-head">Kertyvä data — säilyy sessioiden yli</h3>
+      <ul class="kv-list" id="durableKv"></ul>
+      <div class="quick-row">
+        <button class="primary" id="btnPushDurable">Vie Sheetiin</button>
+        <button class="ghost" id="btnCopyDurable">Kopioi</button>
+        <button class="ghost" id="btnPullDurable">Hae Sheetistä</button>
+      </div>
+      <div class="hint">Matkapäivät, muona, rahat, kielitunnit, päiväkirja ja varusteiden kantopaikat.</div>
+
+      <h3 class="sub-head">Session data — vain tämä peli-ilta</h3>
+      <ul class="kv-list" id="sessionKv"></ul>
+      <button class="ghost wide" id="btnResetSession">Aloita uusi sessio</button>
+      <div class="hint">Nollaa osuma- ja voimapisteet, kierrokset ja tilavaikutukset. Kertyvä data säilyy.</div>
+
+      <button class="ghost wide danger" id="btnResetDurable">Nollaa kertyvä data</button>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab" data-view="battle"><span class="tab-ico">⚔</span><span>Taistelu</span></button>
+  <button class="tab" data-view="adventure"><span class="tab-ico">🧭</span><span>Matka</span></button>
+  <button class="tab" data-view="action"><span class="tab-ico">🎲</span><span>Teot</span></button>
+  <button class="tab" data-view="magic"><span class="tab-ico">✦</span><span>Taika</span></button>
+  <button class="tab" data-view="sheet"><span class="tab-ico">📜</span><span>Hahmo</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js?v=5"></script>
+<script src="js/seed-data.js?v=5"></script>
+<script src="js/util.js?v=5"></script>
+<script src="js/store.js?v=5"></script>
+<script src="js/sheets.js?v=5"></script>
+<script src="js/modes/battle.js?v=5"></script>
+<script src="js/modes/adventure.js?v=5"></script>
+<script src="js/modes/action.js?v=5"></script>
+<script src="js/modes/magic.js?v=5"></script>
+<script src="js/modes/sheet.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+</body>
+</html>

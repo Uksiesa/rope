@@ -1,0 +1,7 @@
+Tallenna hahmon kuva tähän kansioon nimellä hahmo.jpg (tai hahmo.png / hahmo.jpeg / hahmo.webp).
+
+Appi kokeilee nimet siinä järjestyksessä kuin ne on lueteltu js/config.js -tiedoston
+portrait-listassa ja näyttää ensimmäisen, joka löytyy. Jos kuvaa ei ole, kuvapaikka
+jää pois näkyvistä eikä mitään rikkoudu.
+
+Kuva näkyy Hahmo-välilehden yläreunassa pienenä; klikkaus suurentaa sen.

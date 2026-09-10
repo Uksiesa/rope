@@ -1,0 +1,771 @@
+/* =========================================================
+   Totuuden Miekka — kampanjatyökalu
+   Mobiili ensin. Tumma "kynttilänvalo ja teräs" -teema.
+   ========================================================= */
+
+:root {
+  --bg:          #12100d;
+  --bg-2:        #171410;
+  --panel:       #1e1a15;
+  --panel-2:     #262119;
+  --line:        #332c22;
+  --line-soft:   #292319;
+
+  --text:        #ece4d6;
+  --text-dim:    #a3987f;
+  --text-faint:  #6f6552;
+
+  --gold:        #d9a441;
+  --gold-soft:   #a37a2c;
+  --blood:       #b2453a;
+  --steel:       #7ea1bb;
+  --green:       #7fa05a;
+
+  --radius:      14px;
+  --radius-sm:   9px;
+  --shadow:      0 2px 14px rgba(0,0,0,.45);
+
+  --tabbar-h:    62px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #23200f 0%, transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: contain;
+}
+
+h1, h2, h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: .01em;
+}
+
+/* ---------------- Yläpalkki ---------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  background: linear-gradient(180deg, rgba(18,16,13,.97) 60%, rgba(18,16,13,.75));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line-soft);
+}
+.topbar-id { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.char-name {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.char-sub { font-size: 12px; color: var(--text-faint); }
+
+.icon-btn {
+  flex: none;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--gold);
+  font-size: 18px;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.icon-btn:active { background: var(--panel-2); }
+.icon-btn.spinning { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------------- Näkymät ---------------- */
+
+.view { display: none; padding: 14px 14px 24px; }
+.view.active { display: block; animation: fade .18s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px;
+}
+.card-head h2 { font-size: 15px; color: var(--gold); text-transform: uppercase; letter-spacing: .08em; }
+
+.hint { font-size: 12.5px; color: var(--text-faint); margin: 6px 0 10px; }
+.big-num { font-family: Georgia, serif; font-size: 26px; color: var(--text); }
+.hidden { display: none !important; }
+
+/* ---------------- Painikkeet ---------------- */
+
+button {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:active { transform: translateY(1px); }
+button:disabled { opacity: .35; }
+button.primary {
+  background: linear-gradient(180deg, #3a2f1c, #2a2216);
+  border-color: var(--gold-soft);
+  color: var(--gold);
+}
+button.ghost { background: transparent; color: var(--text-dim); }
+button.wide { width: 100%; margin-top: 8px; }
+button.danger { color: var(--blood); border-color: #46261f; }
+button.active { border-color: var(--gold); color: var(--gold); }
+
+.quick-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.quick-row button { flex: 1 1 0; min-width: 44px; padding: 10px 6px; }
+.quick-row button.full { flex: 1 0 100%; }
+.quick-row.tight button { min-height: 38px; padding: 6px 8px; font-size: 13px; }
+.quick-row.disabled { opacity: .4; }
+
+.select, .roll-input, .search-input, .mini-input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  min-height: 44px;
+  max-width: 100%;
+}
+.select { max-width: 62%; }
+.mini-input { flex: 1 1 80px; min-width: 70px; width: 70px; }
+input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ---------------- Taistelu: osumapisteet ---------------- */
+
+.hp-card { padding-bottom: 12px; }
+.hp-head { display: flex; align-items: baseline; justify-content: space-between; }
+.hp-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+.hp-num { font-family: Georgia, serif; }
+.hp-num b { font-size: 30px; color: var(--text); }
+.hp-num span { color: var(--text-faint); font-size: 16px; }
+
+.hp-bar {
+  height: 10px; border-radius: 6px; margin: 9px 0 11px;
+  background: #2a231c; overflow: hidden;
+  border: 1px solid var(--line-soft);
+}
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5d7a3f, #86ad5c);
+  transition: width .25s ease;
+}
+.hp-fill.warn   { background: linear-gradient(90deg, #8a6a2a, #c99a3c); }
+.hp-fill.danger { background: linear-gradient(90deg, #7a2d24, #b2453a); }
+.hp-penalty { margin-top: 9px; font-size: 12.5px; color: var(--text-dim); }
+
+/* ---------------- Taistelu: OB-jako ---------------- */
+
+.split-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 8px 0 10px; border-bottom: 1px dashed var(--line);
+  font-size: 13px; color: var(--text-dim);
+}
+.split-total b { font-family: Georgia, serif; font-size: 24px; color: var(--gold); }
+
+.split-readout { display: flex; gap: 10px; margin: 12px 0 6px; }
+.split-side {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+  background: var(--bg-2);
+}
+.split-side.atk { border-color: #4d2b24; background: linear-gradient(180deg, #241a16, #1b1512); }
+.split-side.def { border-color: #263844; background: linear-gradient(180deg, #161d22, #131a1e); }
+.split-label { display: block; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--text-faint); }
+.split-side b { font-family: Georgia, serif; font-size: 30px; }
+.split-side.atk b { color: #e0836f; }
+.split-side.def b { color: var(--steel); }
+
+.slider {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 34px; background: transparent; margin: 4px 0 2px;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 5px;
+  background: linear-gradient(90deg, #4d6a86 0%, #7ea1bb var(--pct,0%), #2a231c var(--pct,0%), #2a231c 100%);
+  border: 1px solid var(--line);
+}
+.slider::-moz-range-track { height: 8px; border-radius: 5px; background: #2a231c; }
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px; height: 28px; margin-top: -11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d089, #b98c30);
+  border: 1px solid #6b5117;
+  box-shadow: 0 1px 5px rgba(0,0,0,.6);
+}
+.slider::-moz-range-thumb {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #d9a441; border: 1px solid #6b5117;
+}
+.slider:disabled::-webkit-slider-thumb { background: #4a443a; }
+.slider-ticks {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text-faint); margin-bottom: 10px;
+}
+
+/* ---------------- Taistelu: DB-komponentit ---------------- */
+
+.comp-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.comp {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+}
+.comp:last-child { border-bottom: 0; }
+.comp-main { flex: 1; display: flex; flex-direction: column; min-width: 0; cursor: pointer; }
+.comp-name { font-size: 14.5px; }
+.comp-note { font-size: 11.5px; color: var(--text-faint); }
+.comp-val { font-family: Georgia, serif; font-size: 17px; color: var(--steel); min-width: 40px; text-align: right; }
+.comp.off .comp-name, .comp.off .comp-val { color: var(--text-faint); text-decoration: line-through; }
+.comp.blocked { opacity: .5; }
+.comp-lock { width: 46px; text-align: center; font-size: 13px; color: var(--text-faint); }
+
+.switch {
+  -webkit-appearance: none; appearance: none;
+  flex: none;
+  width: 46px; height: 27px; border-radius: 14px;
+  background: #322a21; border: 1px solid var(--line);
+  position: relative; cursor: pointer; transition: background .15s;
+}
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 21px; height: 21px; border-radius: 50%;
+  background: #8d8272; transition: transform .15s, background .15s;
+}
+.switch:checked { background: #4a3c1c; border-color: var(--gold-soft); }
+.switch:checked::after { transform: translateX(19px); background: var(--gold); }
+
+.db-sum {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; color: var(--text-dim);
+  padding: 6px 0; border-top: 1px solid var(--line-soft);
+}
+.db-sum b { font-family: Georgia, serif; font-size: 16px; color: var(--text); }
+
+/* ---------------- Heittolaskuri ---------------- */
+
+.roll-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.roll-row .roll-input { flex: 1; min-width: 0; font-size: 20px; text-align: center; font-family: Georgia, serif; }
+.roll-row .select { flex: 1; max-width: none; }
+.roll-row button { flex: none; }
+
+.roll-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-top: 12px; padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #2b2415, #201b12);
+  border: 1px solid var(--gold-soft);
+}
+.roll-total-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+.roll-total b { font-family: Georgia, serif; font-size: 38px; color: var(--gold); line-height: 1; }
+.roll-formula { margin-top: 7px; font-size: 12px; color: var(--text-faint); text-align: right; }
+
+/* ---------------- Matka: päivämäärä ---------------- */
+
+.date-card {
+  background:
+    radial-gradient(360px 160px at 85% 0%, rgba(217,164,65,.10), transparent 70%),
+    var(--panel);
+}
+.date-main { display: flex; align-items: center; gap: 14px; }
+.date-day {
+  font-family: Georgia, serif; font-size: 52px; line-height: .95;
+  color: var(--gold); min-width: 62px; text-align: center;
+}
+.date-rest { flex: 1; min-width: 0; }
+.date-month { font-family: Georgia, serif; font-size: 20px; }
+.date-year { font-size: 12px; color: var(--text-faint); }
+
+.moon-block { text-align: center; flex: none; width: 74px; }
+.moon svg { display: block; margin: 0 auto; }
+.moon-disc { fill: #17140f; }
+.moon-lit  { fill: #e8dcc0; }
+.moon-ring { fill: none; stroke: #3a332a; stroke-width: 2; }
+.moon-name { font-size: 10.5px; color: var(--text-faint); margin-top: 4px; line-height: 1.2; }
+
+.date-foot {
+  display: flex; justify-content: space-between;
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12.5px; color: var(--text-dim);
+}
+.date-foot b { color: var(--text); }
+
+.day-actions { display: flex; flex-direction: column; gap: 8px; }
+.day-actions button { min-height: 48px; }
+
+/* ---------------- Matka: muona ---------------- */
+
+.food-bar {
+  height: 8px; border-radius: 5px; background: #2a231c;
+  overflow: hidden; margin: 4px 0 12px; border: 1px solid var(--line-soft);
+}
+.food-fill { height: 100%; background: linear-gradient(90deg, #7a6a34, #b99a45); transition: width .25s; }
+.food-fill.low { background: linear-gradient(90deg, #7a2d24, #b2453a); }
+
+/* ---------------- Matka: rahat ---------------- */
+
+.coin-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.coin {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--line-soft);
+}
+.coin:last-child { border-bottom: 0; }
+.coin-dot { width: 13px; height: 13px; border-radius: 50%; flex: none; box-shadow: inset 0 -2px 3px rgba(0,0,0,.4); }
+.coin-name { flex: 1; font-size: 14.5px; }
+.coin-num { font-family: Georgia, serif; font-size: 19px; min-width: 46px; text-align: center; }
+.coin-btn { min-height: 38px; width: 42px; padding: 0; font-size: 18px; }
+
+.convert-box { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+
+/* ---------------- Matka: kielet ---------------- */
+
+.lang-list { list-style: none; margin: 0; padding: 0; }
+.lang { padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
+.lang:last-child { border-bottom: 0; }
+.lang-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.lang-name { font-size: 15px; }
+.lang-rank { font-size: 11.5px; color: var(--text-faint); white-space: nowrap; }
+.lang-track { height: 6px; border-radius: 4px; background: #2a231c; margin: 7px 0 5px; overflow: hidden; }
+.lang-fill { display: block; height: 100%; background: linear-gradient(90deg, #4d6a86, var(--steel)); transition: width .25s; }
+.lang-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-faint); margin-bottom: 8px; }
+
+/* ---------------- Teot ---------------- */
+
+.search-row { display: flex; gap: 8px; }
+.search-input { flex: 1; min-width: 0; }
+.icon-btn.mic { width: 44px; height: 44px; font-size: 17px; }
+.icon-btn.mic.listening { border-color: var(--blood); color: var(--blood); animation: pulse 1.1s ease-in-out infinite; }
+.icon-btn.mic.unsupported { opacity: .35; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(178,69,58,.16); } }
+
+.chip-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 3px; -webkit-overflow-scrolling: touch; }
+.chip-row::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; min-height: 34px; padding: 6px 12px;
+  border-radius: 17px; font-size: 13px;
+  background: transparent; color: var(--text-dim); border: 1px solid var(--line);
+}
+.chip.active { background: #34291494; border-color: var(--gold-soft); color: var(--gold); }
+
+.selected-skill { border-color: var(--gold-soft); }
+.sel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.sel-name { font-family: Georgia, serif; font-size: 19px; }
+.sel-cat { font-size: 12px; color: var(--text-faint); }
+.sel-head .big-num { color: var(--gold); font-size: 32px; }
+.sel-breakdown { display: flex; flex-wrap: wrap; gap: 6px; margin: 11px 0 13px; }
+.bd-item {
+  display: inline-flex; gap: 6px; align-items: baseline;
+  font-size: 11.5px; padding: 4px 9px; border-radius: 12px;
+  background: var(--bg-2); border: 1px solid var(--line-soft);
+}
+.bd-label { color: var(--text-faint); }
+.bd-item b { color: var(--text-dim); }
+
+.skill-list { list-style: none; margin: 0; padding: 0; }
+.list-sep {
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-faint); padding: 14px 0 5px;
+}
+.skill-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 8px; margin: 0 -8px;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 8px; cursor: pointer;
+}
+.skill-row:active { background: var(--panel-2); }
+.skill-row.active { background: #2c2415; border-bottom-color: transparent; }
+.skill-name { flex: 1; font-size: 15px; }
+.skill-ranks { font-size: 11px; color: var(--text-faint); }
+.skill-bonus { font-family: Georgia, serif; font-size: 18px; color: var(--gold); min-width: 46px; text-align: right; }
+.empty { color: var(--text-faint); font-size: 14px; padding: 14px 0; }
+
+/* ---------------- Hahmolomake ---------------- */
+
+.hero {
+  text-align: center;
+  padding: 22px 16px 18px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(400px 200px at 50% 0%, rgba(217,164,65,.14), transparent 70%),
+    linear-gradient(180deg, #221d15, var(--panel));
+  box-shadow: var(--shadow);
+}
+.hero-sigil { font-size: 20px; color: var(--gold-soft); letter-spacing: .5em; margin-left: .5em; }
+.hero-name { font-size: 28px; margin: 6px 0 4px; letter-spacing: .02em; }
+.hero-sub { font-size: 12.5px; color: var(--text-dim); }
+.hero-bars { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.hero-bar { display: flex; align-items: center; gap: 9px; font-size: 11.5px; }
+.hb-label { color: var(--text-faint); width: 84px; text-align: left; }
+.hb-track { flex: 1; height: 7px; border-radius: 4px; background: #2a231c; overflow: hidden; }
+.hb-fill { display: block; height: 100%; }
+.hb-fill.hp { background: linear-gradient(90deg, #5d7a3f, #86ad5c); }
+.hb-fill.pp { background: linear-gradient(90deg, #4d6a86, var(--steel)); }
+.hb-val { width: 70px; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+.stat-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 6px; margin-bottom: 12px;
+}
+.stat {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 8px 4px 7px; text-align: center;
+}
+.stat.high { border-color: var(--gold-soft); background: linear-gradient(180deg, #262014, var(--panel)); }
+.stat-code { font-size: 10px; letter-spacing: .1em; color: var(--text-faint); text-transform: uppercase; }
+.stat-bonus { font-family: Georgia, serif; font-size: 20px; color: var(--gold); line-height: 1.15; }
+.stat-name { font-size: 9px; color: var(--text-dim); line-height: 1.15; }
+.stat-temp { font-size: 9px; color: var(--text-faint); margin-top: 2px; }
+
+.rr-list, .kv-list { list-style: none; margin: 0; padding: 0; }
+.rr, .kv-list li {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px;
+}
+.rr:last-child, .kv-list li:last-child { border-bottom: 0; }
+.rr b { font-family: Georgia, serif; color: var(--steel); font-size: 16px; }
+.kv-list li span { color: var(--text-faint); font-size: 13px; }
+.kv-list li b { font-weight: 500; font-size: 13.5px; }
+
+.gear-list, .inv-list { list-style: none; margin: 0; padding: 0; }
+.gear, .inv {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+}
+.gear:last-child, .inv:last-child { border-bottom: 0; }
+.gear-main, .inv-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.gear-name, .inv-name { font-size: 14.5px; }
+.gear-note, .inv-note { font-size: 11.5px; color: var(--text-faint); }
+.gear-val { font-family: Georgia, serif; font-size: 17px; color: var(--gold); white-space: nowrap; }
+.db-row .gear-val { color: var(--steel); }
+.inv-qty { width: 28px; font-size: 12px; color: var(--text-faint); }
+.inv-weight { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+.weight-tag { font-size: 12px; color: var(--text-faint); }
+
+.skillgroup { border-bottom: 1px solid var(--line-soft); }
+.skillgroup:last-child { border-bottom: 0; }
+.skillgroup-head {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 12px 0; cursor: pointer;
+}
+.sg-name { flex: 1; font-family: Georgia, serif; font-size: 15px; }
+.sg-meta { font-size: 11px; color: var(--text-faint); }
+.sg-chev { color: var(--text-faint); transition: transform .18s; }
+.skillgroup.open .sg-chev { transform: rotate(180deg); }
+.skillgroup-body { display: none; list-style: none; margin: 0; padding: 0 0 10px; }
+.skillgroup.open .skillgroup-body { display: block; }
+.sg-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; }
+.sg-skill { flex: 1.2; font-size: 13.5px; color: var(--text-dim); min-width: 0; }
+.sg-bar { flex: 1; height: 5px; border-radius: 3px; background: #2a231c; overflow: hidden; }
+.sg-bar-fill { display: block; height: 100%; background: linear-gradient(90deg, #6d5520, var(--gold-soft)); }
+.sg-val { font-family: Georgia, serif; font-size: 14px; color: var(--gold); width: 40px; text-align: right; }
+
+.bio { font-size: 14px; color: var(--text-dim); line-height: 1.55; margin: 0 0 12px; }
+
+/* ---------------- Alapalkki ---------------- */
+
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(20,17,13,.96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+}
+.tab {
+  background: none; border: 0; border-radius: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; font-size: 9.5px; color: var(--text-faint); min-height: 0; padding: 0 2px;
+}
+.tab-ico { font-size: 19px; line-height: 1; filter: grayscale(1) opacity(.65); }
+.tab.active { color: var(--gold); }
+.tab.active .tab-ico { filter: none; }
+.tab:active { transform: none; background: rgba(255,255,255,.03); }
+
+/* ---------------- Toast ---------------- */
+
+.toast {
+  position: fixed; left: 50%; transform: translate(-50%, 16px);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);
+  z-index: 40;
+  max-width: 90vw;
+  padding: 11px 16px;
+  border-radius: 22px;
+  background: #2b2419; border: 1px solid var(--gold-soft);
+  color: var(--text); font-size: 13.5px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.6);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------------- Isommat näytöt ---------------- */
+
+@media (min-width: 620px) {
+  .view { max-width: 620px; margin: 0 auto; padding-top: 18px; }
+  .topbar, .tabbar > * { max-width: 620px; }
+  .topbar { justify-content: center; }
+  .topbar-id { max-width: 520px; }
+  .stat-grid { grid-template-columns: repeat(10, 1fr); }
+  .day-actions { flex-direction: row; }
+}
+
+
+/* ================= Tilabanneri ================= */
+
+.status-banner {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 14px; margin-bottom: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.status-banner b { font-family: Georgia, serif; font-size: 15px; letter-spacing: .08em; }
+.status-banner span { font-size: 12px; color: var(--text-dim); }
+.status-banner.stunned {
+  border-color: #7a5a1c; background: linear-gradient(180deg, #33280f, #241d10);
+  animation: throb 1.6s ease-in-out infinite;
+}
+.status-banner.stunned b { color: var(--gold); }
+.status-banner.bleeding { border-color: #6d2c24; background: linear-gradient(180deg, #2e1614, #221312); }
+.status-banner.bleeding b { color: var(--blood); }
+.status-banner.freed { border-color: #4c6a35; background: linear-gradient(180deg, #1d2716, #161d12); }
+.status-banner.freed b { color: #9dc26f; }
+@keyframes throb { 50% { border-color: var(--gold); } }
+
+/* ================= Kierrokset ja vaikutukset ================= */
+
+.round-card .big-num { color: var(--gold); }
+
+.effect-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.effect {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 0; border-bottom: 1px solid var(--line-soft);
+}
+.effect:last-child { border-bottom: 0; }
+.eff-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.effect.stun  .eff-dot { background: var(--gold); }
+.effect.bleed .eff-dot { background: var(--blood); }
+.eff-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.eff-name { font-size: 14.5px; }
+.eff-meta { font-size: 11.5px; color: var(--text-faint); }
+.coin-btn.remove { color: var(--blood); }
+
+.effect-add { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.effect-add-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ea-label { font-size: 13.5px; width: 84px; flex: none; color: var(--text-dim); }
+.ea-unit { font-size: 11.5px; color: var(--text-faint); flex: 1; }
+.effect-add .mini-input { width: 62px; flex: none; text-align: center; }
+.effect-add button { flex: none; }
+.effect-add .chip-row { margin-top: 4px; }
+
+/* ================= Taika ================= */
+
+.hp-fill.pp { background: linear-gradient(90deg, #4d6a86, var(--steel)); }
+.hp-fill.pp.warn   { background: linear-gradient(90deg, #6a5b86, #9b86bb); }
+.hp-fill.pp.danger { background: linear-gradient(90deg, #7a2d24, #b2453a); }
+
+.wide-input { width: 100%; }
+
+.kv-list.compact li { padding: 5px 0; font-size: 13px; }
+
+.spell-body { padding-bottom: 8px; }
+.spell-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 8px; margin: 0 -8px;
+  border-radius: 8px; cursor: pointer;
+  border-bottom: 1px solid var(--line-soft);
+}
+.spell-row:last-child { border-bottom: 0; }
+.spell-row:active { background: var(--panel-2); }
+.spell-row.active { background: #22282e; border-bottom-color: transparent; }
+.spell-row.unaffordable { opacity: .45; }
+.spell-level {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: Georgia, serif; font-size: 11px; color: var(--text-dim);
+  background: var(--bg-2); border: 1px solid var(--line);
+}
+.spell-row.active .spell-level { color: var(--steel); border-color: #3f5a72; }
+.spell-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.spell-name { font-size: 14.5px; }
+.spell-sub { font-size: 11.5px; color: var(--text-faint); }
+.spell-pp {
+  font-family: Georgia, serif; font-size: 15px; color: var(--steel);
+  white-space: nowrap; min-width: 48px; text-align: right;
+}
+#spellCard { border-color: #3f5a72; }
+#spellCard .big-num { color: var(--steel); font-size: 24px; }
+#btnCast:disabled { opacity: .4; }
+
+/* ================= Killat ================= */
+
+.guild-list { list-style: none; margin: 0; padding: 0; }
+.guild {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 11px 0; border-bottom: 1px solid var(--line-soft);
+}
+.guild:last-child { border-bottom: 0; }
+.guild-badge {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: Georgia, serif; font-size: 15px; color: var(--gold);
+  background: linear-gradient(180deg, #2e2716, #221d13);
+  border: 1px solid var(--gold-soft);
+}
+.guild-main { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.guild-name { font-size: 15px; }
+.guild-rank { font-size: 12px; color: var(--gold-soft); }
+.guild-note { font-size: 11.5px; color: var(--text-faint); }
+
+/* ================= Varusteet kantopaikoittain ================= */
+
+.inv-group { margin-bottom: 14px; }
+.inv-group:last-child { margin-bottom: 0; }
+.inv-group-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+.ig-name { font-family: Georgia, serif; font-size: 13.5px; color: var(--gold); letter-spacing: .04em; }
+.ig-weight { font-size: 11.5px; color: var(--text-faint); }
+
+.slot-select {
+  flex: none; width: 104px;
+  font: inherit; font-size: 11.5px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 6px; min-height: 34px;
+}
+
+/* ================= Päiväkirja ================= */
+
+.log-list { list-style: none; margin: 0; padding: 0; }
+.log-entry { border-bottom: 1px solid var(--line-soft); }
+.log-entry:last-child { border-bottom: 0; }
+.log-head { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; }
+.log-day {
+  flex: none; width: 42px; text-align: center;
+  font-family: Georgia, serif; font-size: 12px; color: var(--text-faint);
+  border-right: 1px solid var(--line); padding-right: 8px;
+}
+.log-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.log-date { font-size: 13.5px; }
+.log-summary { font-size: 11.5px; color: var(--text-faint); }
+.log-entry.today .log-date { color: var(--gold); }
+.log-body { display: none; padding: 0 0 10px 52px; }
+.log-entry.open .log-body { display: block; }
+.log-entry.open .sg-chev { transform: rotate(180deg); }
+.log-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: 12.5px; color: var(--text-dim); padding: 3px 0;
+}
+.log-row b { color: var(--text); font-weight: 500; }
+
+/* ================= Datakerrokset ================= */
+
+.sub-head {
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); margin: 18px 0 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.sub-head:first-of-type { margin-top: 0; }
+
+
+/* ================= Lomakkeen muistiinpanot ================= */
+
+.note-block {
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.note-label {
+  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--gold-soft); margin-bottom: 4px;
+}
+.note-value { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+/* ================= Kielten opiskeluraidat ================= */
+
+.lang-track-row { margin: 10px 0 12px; }
+.lang-track-row:last-child { margin-bottom: 2px; }
+.lt-head {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 11.5px; margin-bottom: 5px;
+}
+.lt-label { color: var(--text); font-size: 13px; width: 64px; flex: none; }
+.lt-rank { flex: 1; color: var(--gold-soft); }
+.lt-hours { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.lang-track-row.full .lang-fill { background: linear-gradient(90deg, #5d7a3f, #86ad5c); }
+.lang-track-row.full .lt-hours { color: #9dc26f; }
+.lt-hours.unset { color: var(--gold-soft); }
+.lang-track-row .quick-row { margin-top: 6px; }
+
+/* ================= Loitsun lukitus ================= */
+
+.spell-row.locked { opacity: .55; }
+.spell-row.locked .spell-name { color: var(--text-dim); }
+.spell-row.locked .spell-pp { font-size: 12px; }
+#spellCard.locked { border-color: var(--line); }
+#spellCard.locked .big-num { color: var(--text-faint); }
+
+
+/* ================= Hahmon kuva ================= */
+
+.hero-portrait {
+  display: block;
+  margin: 0 auto 12px;
+  width: 120px; height: 120px;
+  object-fit: cover;
+  object-position: 63% 36%;   /* soittaja on kuvassa oikealla ylhäällä */
+  border-radius: 14px;
+  border: 1px solid var(--gold-soft);
+  box-shadow: 0 3px 16px rgba(0,0,0,.55);
+  cursor: pointer;
+  transition: width .22s ease, height .22s ease, border-radius .22s ease;
+}
+.hero-portrait.big {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-sm);
+  object-position: center 42%;
+}
