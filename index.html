@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 
@@ -84,6 +84,14 @@
         <select id="weaponSelect" class="select"></select>
       </div>
 
+      <div class="spell-cast hidden" id="spellCastRow">
+        <div class="sc-main">
+          <span class="sc-name" id="spellCastName">—</span>
+          <span class="sc-sub" id="spellCastSub">—</span>
+        </div>
+        <button class="primary" id="btnCastAttack">Loitsi</button>
+      </div>
+
       <div class="split-total">
         <span>Jaettava pooli (OB)</span>
         <b id="poolTotal">0</b>
@@ -140,6 +148,7 @@
         <b>—</b>
       </div>
       <div class="roll-formula" id="battleFormula"></div>
+      <div class="fumble-warn hidden" id="fumbleWarn"></div>
     </div>
   </section>
 
@@ -248,6 +257,7 @@
         <b class="big-num" id="selBonus">0</b>
       </div>
       <div class="sel-breakdown" id="selBreakdown"></div>
+      <div class="spell-chips hidden" id="spellChips"></div>
       <div class="roll-row">
         <input type="number" id="actionRoll" inputmode="numeric" class="roll-input" placeholder="d100">
         <input type="number" id="actionMod" inputmode="numeric" class="roll-input" placeholder="modi">
@@ -283,6 +293,16 @@
         <button class="ghost full" data-pp="full">Täydet</button>
       </div>
       <div class="hp-penalty" id="ppNote"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Aktiiviset loitsut</h2>
+        <span class="weight-tag" id="activeCount">—</span>
+      </div>
+      <ul class="active-list" id="activeSpells"></ul>
+      <div class="hint">Loitsu jää listalle kunnes poistat sen. Vaikutukset lasketaan
+        mukaan Taistelu- ja Teot-näkymissä niin kauan kuin loitsu on aktiivinen.</div>
     </div>
 
     <div class="card selected-skill hidden" id="spellCard">
@@ -460,18 +480,18 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=15"></script>
-<script src="js/seed-data.js?v=15"></script>
-<script src="js/util.js?v=15"></script>
-<script src="js/rules.js?v=15"></script>
-<script src="js/store.js?v=15"></script>
-<script src="js/sheets.js?v=15"></script>
-<script src="js/modes/battle.js?v=15"></script>
-<script src="js/modes/adventure.js?v=15"></script>
-<script src="js/modes/action.js?v=15"></script>
-<script src="js/modes/magic.js?v=15"></script>
-<script src="js/modes/levelup.js?v=15"></script>
-<script src="js/modes/sheet.js?v=15"></script>
-<script src="js/app.js?v=15"></script>
+<script src="js/config.js?v=20"></script>
+<script src="js/seed-data.js?v=20"></script>
+<script src="js/util.js?v=20"></script>
+<script src="js/rules.js?v=20"></script>
+<script src="js/store.js?v=20"></script>
+<script src="js/sheets.js?v=20"></script>
+<script src="js/modes/battle.js?v=20"></script>
+<script src="js/modes/adventure.js?v=20"></script>
+<script src="js/modes/action.js?v=20"></script>
+<script src="js/modes/magic.js?v=20"></script>
+<script src="js/modes/levelup.js?v=20"></script>
+<script src="js/modes/sheet.js?v=20"></script>
+<script src="js/app.js?v=20"></script>
 </body>
 </html>

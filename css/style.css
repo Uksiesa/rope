@@ -867,3 +867,47 @@ button.big-link {
 .diff-row.conflict b { color: var(--blood); }
 .diff-row.known { opacity: .55; }
 .diff-row.known .diff-note { color: var(--text-faint); }
+
+
+/* ================= Aktiiviset loitsut ================= */
+
+.active-list { list-style: none; margin: 0; padding: 0; }
+.active-spell {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+}
+.active-spell:last-child { border-bottom: 0; }
+.as-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.as-name { font-size: 14.5px; }
+.as-effect { font-size: 11.5px; color: var(--steel); }
+
+/* ================= Loitsuhyökkäys ================= */
+
+.spell-cast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 10px;
+  border: 1px solid #3f5a72; border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #161d22, #131a1e);
+}
+.sc-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.sc-name { font-size: 14.5px; color: var(--steel); }
+.sc-sub { font-size: 11.5px; color: var(--text-faint); }
+.spell-cast button { flex: none; }
+
+/* ================= Fumble ================= */
+
+.fumble-warn {
+  margin-top: 8px; padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--blood);
+  background: linear-gradient(180deg, #2e1614, #221312);
+  color: var(--blood);
+  font-family: Georgia, serif; font-size: 13.5px; letter-spacing: .05em;
+  text-align: center;
+}
+
+/* ================= Loitsubonukset taitoheitossa ================= */
+
+.spell-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.spell-chip { font-size: 11.5px; }
+.spell-chip:not(.active) { opacity: .5; text-decoration: line-through; }

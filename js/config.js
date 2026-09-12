@@ -20,6 +20,7 @@ const CONFIG = {
         skills:    761231743,    // "Skills or capabilities"
         rules:     1135503206,   // "Rules": ominaisuusbonus-, kehityspiste- ja
                                  //          voimapistetaulukot + taitoluokkien tasobonus
+        spells:    354842485,    // "Spell bonus": loitsujen vaikutukset
         durable:   null          // syntyy vasta kun kertyvän datan vienti otetaan käyttöön
       },
 
@@ -183,6 +184,10 @@ const CONFIG = {
     hitsPerLevel: [
       { from: 1, to: 99, value: 2 }
     ],
+
+    // Fumble-arvo aseille joita ei ole lomakkeen WEAPONS-taulukossa
+    // (aseeton taistelu, suunnatut taiat). Heitto <= arvo on fumble.
+    defaultFumble: 5,
 
     // Taidot joiden Classes-solu ei kerro oikeaa ominaisuutta. Lomakkeessa
     // aseettoman taistelun rivit ovat identtiset, vaikka lyönti käyttää Voimaa

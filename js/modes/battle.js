@@ -4,6 +4,7 @@
 const Battle = {
 
   justFreed: false,   // näytetään "voit toimia taas" seuraavaan toimintoon asti
+  lastCast: null,     // viimeisin loitsinta tällä kierroksella
   chain: [],          // avoimen heiton osaheitot, viimeisin on syöttökentässä
 
   init() {
@@ -105,6 +106,8 @@ const Battle = {
 
     ['#battleRoll', '#battleMod'].forEach(sel => $(sel).addEventListener('input', () => this.renderRoll()));
     $('#rollTarget').addEventListener('change', () => this.renderRoll());
+    $('#btnCastAttack').addEventListener('click', () => this.castAttack());
+
     $('#battleChain').addEventListener('click', e => {
       if (!e.target.closest('button[data-addroll]')) return;
       const v = numOf($('#battleRoll'), null);
@@ -123,6 +126,25 @@ const Battle = {
       this.renderRoll();
       $('#battleRoll').focus();
     });
+  },
+
+  /** Loitsuhyökkäys: voimapisteet veloitetaan samasta poolista kuin Taika-
+      näkymässä, ja loitsinta kirjataan näkyviin. Hyökkäysheitto tehdään
+      normaalisti, koska suunnattu taika ratkaistaan d100-heitolla. */
+  castAttack() {
+    const st = this.state();
+    if (!st.isSpell) return;
+    const sp = st.weapon.spell;
+    const s = Store.session;
+    if (s.ppCur < sp.pp) { toast('Voimapisteet eivät riitä.'); return; }
+
+    haptic();
+    Store.update(x => {
+      x.ppCur = clamp(x.ppCur - sp.pp, 0, Store.character.vitals.ppMax);
+    });
+    this.lastCast = 'Loitsittu kierroksella ' + s.round + ' · −' + sp.pp + ' pp · jäljellä ' + s.ppCur;
+    this.render();
+    toast(sp.name + ' loitsittu — ' + sp.pp + ' pp, jäljellä ' + s.ppCur + '.');
   },
 
   /* ---------------- Tilavaikutukset ---------------- */
@@ -161,6 +183,7 @@ const Battle = {
       s.effects = s.effects.filter(x => x.type !== 'stun' || x.rounds > 0);
       s.round += 1;
     });
+    this.lastCast = null;
 
     this.justFreed = freed.length > 0;
     this.render();
@@ -173,9 +196,30 @@ const Battle = {
 
   /* ---------------- Laskenta ---------------- */
 
+  /** Aseet ja loitsuhyökkäykset samassa valikossa. Loitsun OB tulee
+      Suunnatut taiat -taidosta, koska se on sen hyökkäysbonus. */
+  attackOptions() {
+    const c = Store.character;
+    const directed = (c.weapons || []).find(w => w.kind === 'directed');
+    const spells = Rules.attackSpells(c).map(a => ({
+      id: a.id,
+      name: a.name,
+      ob: directed ? directed.ob : 0,
+      note: [a.list, a.pp + ' pp', a.note].filter(Boolean).join(' · '),
+      fumble: null,
+      kind: 'spell',
+      canParry: false,
+      blocks: [],
+      spell: a
+    }));
+    return (c.weapons || []).concat(spells);
+  },
+
   state() {
     const c = Store.character, s = Store.session;
-    const weapon = c.weapons.find(w => w.id === s.weaponId) || c.weapons[0] || { ob: 0, name: '—', blocks: [] };
+    const options = this.attackOptions();
+    const weapon = options.find(w => w.id === s.weaponId) || options[0] ||
+                   { ob: 0, name: '—', blocks: [] };
     const canParry = weapon.canParry !== false;
     const blocked = weapon.blocks || [];
 
@@ -184,7 +228,10 @@ const Battle = {
     const parry = Math.round(pool * pct / 100);
     const attack = pool - parry;
 
-    const components = c.defense.map(d => {
+    // Aktiivisten loitsujen puolustusvaikutukset tulevat mukaan komponentteina,
+    // jolloin ne voi kytkeä pois kuten kilven tai panssarin.
+    const all = c.defense.concat(Rules.activeDbComponents(c, s.activeSpells));
+    const components = all.map(d => {
       const isBlocked = blocked.includes(d.id);
       const off = s.defenseOff.includes(d.id);
       return Object.assign({}, d, {
@@ -198,7 +245,9 @@ const Battle = {
     const bleeds = s.effects.filter(x => x.type === 'bleed');
 
     return {
-      weapon, canParry, pool, pct, parry, attack, components,
+      options, weapon, canParry, pool, pct, parry, attack, components,
+      isSpell: weapon.kind === 'spell',
+      fumble: Rules.fumbleFor(weapon),
       dbBase, dbTotal: dbBase + parry,
       stuns, bleeds,
       stunRounds: stuns.reduce((mx, x) => Math.max(mx, x.rounds), 0),
@@ -280,12 +329,28 @@ const Battle = {
 
     /* --- Ase --- */
     const sel = $('#weaponSelect');
-    if (sel.dataset.filled !== String(c.weapons.length) + c.meta.name) {
+    const stamp = st.options.map(w => w.id + w.ob).join('|');
+    if (sel.dataset.filled !== stamp) {
       sel.innerHTML = '';
-      c.weapons.forEach(w => sel.appendChild(el('option', { value: w.id, text: w.name + ' · OB ' + w.ob })));
-      sel.dataset.filled = String(c.weapons.length) + c.meta.name;
+      st.options.forEach(w => sel.appendChild(el('option', {
+        value: w.id,
+        text: w.name + ' · OB ' + w.ob + (w.kind === 'spell' ? ' · loitsu' : '')
+      })));
+      sel.dataset.filled = stamp;
     }
     sel.value = st.weapon.id;
+
+    /* --- Loitsuhyökkäys --- */
+    const castRow = $('#spellCastRow');
+    castRow.classList.toggle('hidden', !st.isSpell);
+    if (st.isSpell) {
+      const pp = st.weapon.spell.pp;
+      $('#spellCastName').textContent = st.weapon.name;
+      $('#spellCastSub').textContent = this.lastCast || (st.weapon.note + ' · voimapisteitä ' + s.ppCur);
+      const btn = $('#btnCastAttack');
+      btn.disabled = s.ppCur < pp;
+      btn.textContent = s.ppCur < pp ? 'Ei tarpeeksi voimapisteitä' : 'Loitsi (−' + pp + ' pp)';
+    }
 
     /* --- Jako --- */
     $('#poolTotal').textContent = st.pool;
@@ -345,6 +410,7 @@ const Battle = {
     if (!rolls.length) {
       out.textContent = '—';
       formula.textContent = baseLabel + ' ' + signed(base) + ' — syötä heitto';
+      $('#fumbleWarn').classList.add('hidden');
       return;
     }
     const roll = rollChainTotal(rolls);
@@ -353,5 +419,14 @@ const Battle = {
       (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
       ' (heitto) ' + signed(base) + ' (' + baseLabel + ')' +
       (mod ? ' ' + signed(mod) + ' (modi)' : '');
+
+    // Fumble katsotaan ensimmäisestä, muokkaamattomasta heitosta.
+    const warn = $('#fumbleWarn');
+    const isFumble = target === 'attack' && st.fumble > 0 && rolls[0] <= st.fumble;
+    warn.classList.toggle('hidden', !isFumble);
+    if (isFumble) {
+      warn.textContent = 'FUMBLE — ' + st.weapon.name + ', raja ' + st.fumble +
+        (st.weapon.fumble ? '' : ' (oletus, ei lomakkeessa)');
+    }
   }
 };

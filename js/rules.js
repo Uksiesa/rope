@@ -126,6 +126,104 @@ const Rules = {
     return Math.max(similarity(target, skill.name),
                     similarity(target, skill.display || skill.name)) >= 0.8;
   },
+  /* ---------------- Loitsujen vaikutukset ----------------
+     Vaikutukset luetaan Sheetin loitsuvälilehdeltä, joten uusi loitsu tai
+     muuttunut bonus vaatii vain taulukkomuokkauksen. */
+
+  spellBonusRows(character, spellName) {
+    const want = norm(spellName);
+    return (character.spellBonuses || []).filter(b => this.spellNameMatches(b.spell, spellName));
+  },
+
+  /** Loitsuvälilehden nimi voi olla hieman eri asussa kuin lomakkeen
+      loitsulistassa ("Shock Bolt" vs "Shock Bolt I"), joten vertailu on sumea. */
+  spellNameMatches(a, b) {
+    const x = norm(a), y = norm(b);
+    if (!x || !y) return false;
+    if (x === y) return true;
+    // roomalainen numero lopussa ei erota loitsua
+    const strip = v => v.replace(/\s+(i|ii|iii|iv|v|vi|vii|viii|ix|x)$/, '').trim();
+    if (strip(x) === strip(y)) return true;
+    return similarity(a, b) >= 0.85;
+  },
+
+  /** Onko loitsulla vaikutus, jota kannattaa seurata aktiivisena? */
+  spellHasEffect(character, spellName) {
+    return this.spellBonusRows(character, spellName).some(b => b.type !== 'attack');
+  },
+
+  /** Vaikutuksen kohde luettavana tekstinä. */
+  scopeLabel(b) {
+    const t = norm(b.target);
+    const who = (!t || t === 'kaikki') ? 'kaikkia vastaan'
+              : t.replace('+', ' ja ') + ' vastaan';
+    return who + (b.scope === 'once' ? ' · yksi hyökkäys' : '');
+  },
+
+  /** Aktiivisten loitsujen puolustusvaikutukset DB-komponentteina.
+      Myös "−25 hyökkääjän heittoon" on tässä positiivisena, koska lopputulos
+      on sama kuin DB-lisä. */
+  activeDbComponents(character, active) {
+    const out = [];
+    (active || []).forEach(a => {
+      this.spellBonusRows(character, a.spell)
+        .filter(b => b.type === 'db')
+        .forEach(b => out.push({
+          id: 'asp-' + a.id + '-' + b.id,
+          name: a.spell + (b.note ? ' (' + b.note + ')' : ''),
+          value: b.value,
+          toggleable: true,
+          on: b.defaultOn,
+          note: this.scopeLabel(b),
+          fromSpell: true
+        }));
+    });
+    return out;
+  },
+
+  /** Aktiivisten loitsujen taitovaikutukset yhdelle taidolle. */
+  activeSkillBonuses(character, active, skill) {
+    const out = [];
+    if (!skill) return out;
+    (active || []).forEach(a => {
+      this.spellBonusRows(character, a.spell)
+        .filter(b => b.type === 'skill' && this.skillMatches(skill, b.target))
+        .forEach(b => out.push({
+          key: a.id + '|' + b.id,
+          spell: a.spell,
+          value: b.value,
+          note: b.note,
+          defaultOn: b.defaultOn
+        }));
+    });
+    return out;
+  },
+
+  /** Loitsut jotka ovat valittavissa hyökkäystyypiksi Taistelu-näkymässä. */
+  attackSpells(character) {
+    return (character.spellBonuses || [])
+      .filter(b => b.type === 'attack')
+      .map(b => {
+        const sp = (character.spells || []).find(s => this.spellNameMatches(s.name, b.spell));
+        return {
+          id: 'as-' + slug(b.spell),
+          name: b.spell,
+          list: sp ? sp.list : b.list,
+          pp: sp ? sp.pp : 0,
+          level: sp ? sp.level : null,
+          known: sp ? sp.known : true,
+          note: b.note
+        };
+      });
+  },
+
+  /** Aseen fumble-arvo: lomakkeen WEAPONS-taulukko ensin, muuten configin oletus.
+      Heitto <= tämä on fumble. */
+  fumbleFor(weapon) {
+    if (weapon && Number.isFinite(weapon.fumble) && weapon.fumble > 0) return weapon.fumble;
+    return this.t().defaultFumble || 0;
+  },
+
   /* ---------------- Koko hahmon laskenta ---------------- */
 
   /** Palauttaa uuden hahmo-objektin, jonka johdetut luvut on laskettu
@@ -339,6 +437,23 @@ const Rules = {
         diffs.push({ kind: 'Ominaisuus', name: st.name, laskettu: st.bonus, lomake: st.sheetBonus });
       }
     });
+    // Loitsuvälilehden taitorivi, jonka kohde ei osu mihinkään taitoon, jäisi
+    // muuten hiljaa vaikuttamatta. Nostetaan se esiin.
+    (computed.spellBonuses || []).forEach(b => {
+      if (b.type !== 'skill') return;
+      const hit = computed.skills.some(sk => this.skillMatches(sk, b.target));
+      if (!hit) {
+        diffs.push({
+          kind: 'Loitsu',
+          name: b.spell,
+          laskettu: 0,
+          lomake: b.value,
+          conflict: true,
+          note: 'kohde "' + b.target + '" ei vastaa mitään taitoa — kirjoita nimi kuten Skills-välilehdellä'
+        });
+      }
+    });
+
     const known = (this.t().sheetErrors || []).map(norm);
     computed.skills.forEach(sk => {
       const nm = sk.display || sk.name;

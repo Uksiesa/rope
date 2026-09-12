@@ -22,7 +22,7 @@ merkityn kehityspistesuunnitelman, näyttää bonukset ennen ja jälkeen, ja
 | **Matka** | Kampanjakalenteri, kuunkierto, matkapäivät, muona, rahat neljänä kolikkotyyppinä, kielten opiskelutunnit ja päivä päivältä täyttyvä päiväkirja |
 | **Teot** | Taidon bonus + käsin syötetty heitto. Haku, kategoriasuodattimet ja puhehaku |
 | **Taistelu** | Osumapisteet, taistelukierrokset ja tilavaikutukset (tainnutus laskee alas, verenvuoto vähentää hp:tä kierroksen lopussa), aseen OB jaettuna hyökkäykseen ja parryyn, DB:n komponentit togglattavina, heittolaskuri |
-| **Taika** | Voimapisteet (toimivat kuten osumapisteet) ja loitsut **taikalistoittain** ryhmiteltynä, listan heittobonus otsikossa. Loitsiminen vähentää pisteet; listan tason ylittävät loitsut näkyvät lukittuina |
+| **Taika** | Voimapisteet, **aktiiviset loitsut** ja loitsut taikalistoittain ryhmiteltynä. Loitsiminen vähentää pisteet ja kestovaikutteinen loitsu jää aktiivisten listalle, jolloin sen bonus lasketaan mukaan Taistelu- ja Teot-näkymissä |
 
 **Avoin heitto**: kun heität 96+ tai 05−, heittokentän alle ilmestyy korostettu
 "+ avoin heitto" -nappi. Se siirtää heiton ketjuun ja tyhjentää kentän seuraavaa
@@ -73,6 +73,8 @@ näyttää vanhaa koodia.
 | Kielten tuntitavoitteet | appissa, Matka-välilehden "Tavoite"-nappi |
 | Avoimen heiton rajat | `js/config.js` → `openEnded` |
 | Bonustaulukot | Sheetin `Rules`-välilehti, oletukset `js/config.js` → `rules` |
+| Loitsujen vaikutukset | Sheetin `Spell bonus` -välilehti, ks. [docs/loitsut.md](docs/loitsut.md) |
+| Oletusfumble | `js/config.js` → `rules.defaultFumble` |
 | Varusteiden kantopaikat | `js/config.js` → `slots` |
 | Tilavaikutusten pikavalinnat | `js/config.js` → `combat.effectPresets` |
 | Datalähde (seed ↔ sheets) | `js/config.js` → `data.source` |
@@ -92,6 +94,11 @@ näyttää vanhaa koodia.
 Ero on koko datamallin ydin: Sheetin päivitys ei nollaa kertynyttä dataa, eikä
 uuden session aloitus hukkaa kerättyjä kielitunteja tai rahoja. Yksityiskohdat ja
 Sheetiin kirjoittava Apps Script: [docs/kertyva-data.md](docs/kertyva-data.md).
+
+**Loitsut vaikuttavat heittoihin.** Aktiivisen loitsun bonus lasketaan mukaan
+puolustukseen ja taitoheittoihin, ja yksittäisen heiton kohdalla sen voi kytkeä
+pois. Loitsuhyökkäykset ovat asevalikossa ja veloittavat voimapisteet samasta
+poolista. Aseilla on omat fumble-rajansa. Kaikki tämä: [docs/loitsut.md](docs/loitsut.md).
 
 **Hahmodata on raakasyötteitä.** Sheet kertoo ominaisuusarvot, taitojen tasot,
 kiltatasot sekä esine- ja erikoisbonukset; appi laskee niistä taitobonukset,

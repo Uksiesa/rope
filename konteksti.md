@@ -175,6 +175,37 @@ päivitetty, päällekirjoitus kumotaan.
 se ei ansaitse paikkaa viiden pelinaikaisen välilehden joukossa — nappi on
 Hahmo-välilehdellä.
 
+## Päätökset (12.9.2026) — loitsut vaikuttavat heittoihin
+
+**Loitsujen vaikutukset omalle välilehdelle, ei koodiin.** Uusi loitsu tai
+muuttunut bonus on taulukkomuokkaus. Yksi rivi per vaikutus, koska sama loitsu
+voi vaikuttaa kahteen asiaan (Shadow: hiivi ja piileskele).
+
+**Puolustusloitsut normalisoidaan DB:hen.** Lomakkeessa osa on kirjattu
+"−25 hyökkääjän heittoon" ja osa "+50 DB", mutta vaikutus on sama. Molemmat
+menevät DB-komponenteiksi kilven ja panssarin rinnalle, jolloin ne voi kytkeä
+pois tilanteen mukaan — Turn blade ei auta jousta vastaan.
+
+**Ei ajastinta.** Loitsu jää aktiivisten listalle kunnes pelaaja poistaa sen,
+myös kertakäyttöiset. Kesto on pelaajan vastuulla, ja appi vain muistaa mitä on
+päällä. Kaksi suojaa lisättiin testauksessa: sama loitsu ei mene listalle
+kahdesti, eikä uudelleenloitsiminen vie voimapisteitä — ilman ajastinta se ei
+tuottaisi mitään, joten vahinkoklikkaus olisi pelkkää tappiota.
+
+**Heittokohtainen ohitus, ei pysyvä.** Sly ears antaa +50 pelkkään kuuloon,
+joten näköhavainnossa bonus kytketään pois yhtä heittoa varten loitsun pysyessä
+aktiivisena. Oletustila tulee taulukon Oletus-sarakkeesta.
+
+**Suunnattu taika säilytti heittonsa.** Alkuperäinen pyyntö oli ohittaa heitto,
+mutta RoleMasterissa Shock Bolt ratkaistaan d100 + Suunnatut taiat, ja se oli jo
+appissa. Kysyttäessä ratkaisu oli säilyttää heitto ja lisätä siihen voimapisteiden
+veloitus samasta poolista kuin Taika-näkymässä.
+
+**Taitonimien täsmäys on sumea mutta ei hiljainen.** `havainnointi` löytää
+`Havannointi`, mutta liian kaukainen muoto ei osu. Siksi osumatta jäänyt kohde
+raportoidaan Bonuslaskenta-kortissa — hiljaa vaikuttamatta jäävä bonus olisi
+pahin mahdollinen vika tässä ominaisuudessa.
+
 ## Vaihe ja seuraavat askeleet
 
 Vaihe 1 (valmis): mockup, jotta UI ja käyttövirta voidaan arvioida.

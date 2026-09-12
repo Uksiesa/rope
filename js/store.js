@@ -44,7 +44,7 @@ const Store = {
   setCharacter(data, meta) {
     // Varmistetaan että kaikki listat ovat olemassa, vaikka välilehti puuttuisi.
     ['stats', 'skills', 'weapons', 'defense', 'spells', 'guilds',
-     'resists', 'languages', 'inventory'].forEach(k => {
+     'resists', 'languages', 'inventory', 'spellBonuses'].forEach(k => {
       if (!Array.isArray(data[k])) data[k] = [];
     });
     if (!data.vitals) data.vitals = { hitsMax: 0, ppMax: 0 };
@@ -87,7 +87,8 @@ const Store = {
       round: 1,             // taistelukierros
       effects: [],          // { id, type: 'stun'|'bleed', name, rounds, perRound }
       recentSkills: [],
-      spellId: null
+      spellId: null,
+      activeSpells: []    // { id, spell, at } — poistetaan käsin
     };
   },
 

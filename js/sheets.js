@@ -39,11 +39,18 @@ const Sheets = {
             console.warn('Rules-välilehteä ei luettu:', err.message);
             return null;
           })
+        : Promise.resolve(null),
+      gids.spells
+        ? this.fetchGrid(gids.spells, 'Spell bonus').catch(err => {
+            console.warn('Loitsuvälilehteä ei luettu:', err.message);
+            return null;
+          })
         : Promise.resolve(null)
     ];
-    const [character, skills, rules] = await Promise.all(jobs);
+    const [character, skills, rules, spells] = await Promise.all(jobs);
     const out = parseCharacterSheet(character, skills);
     out.rules = rules ? parseRulesGrid(rules) : null;
+    out.spellBonuses = spells ? parseSpellBonusGrid(spells) : [];
     return out;
   },
 
@@ -173,6 +180,7 @@ const asNum = v => {
   return Number.isFinite(n) ? n : 0;
 };
 const hasNum = v => String(v).trim() !== '' && /\d/.test(String(v));
+const asBool = v => ['kyllä', 'kylla', 'true', '1', 'x', 'yes', 'on'].includes(norm(v));
 
 /** Lomakkeen taitonimet ovat kirjanpitomuotoisia ("Lista 6 - Sound Control (50)").
     Näytölle riisutaan järjestysnumerot ja luokittelevat etuliitteet pois; alkuperäinen
@@ -450,6 +458,8 @@ function buildWeapons(g, skills) {
       info[norm(name)] = {
         bonus: cellAt(g, r, cBonus),
         fumble: cellAt(g, r, cFumble),
+        // Heitto <= tämä on fumble. null = lomakkeessa ei ole arvoa.
+        fumbleValue: hasNum(cellAt(g, r, cFumble)) ? asNum(cellAt(g, r, cFumble)) : null,
         range: cellAt(g, r, cRange),
         special: cellAt(g, r, cSpecial)
       };
@@ -467,7 +477,6 @@ function buildWeapons(g, skills) {
     const extra = info[norm(name)] || {};
     const parts = [];
     if (extra.bonus) parts.push('ase ' + extra.bonus);
-    if (extra.fumble) parts.push('fumble ' + extra.fumble);
     if (extra.range) parts.push('kantama ' + extra.range);
     if (extra.special) parts.push(extra.special);
     if (directed) parts.push('ei parrya');
@@ -479,6 +488,8 @@ function buildWeapons(g, skills) {
       ob: sk.total,
       table: '',
       note: parts.join(' · '),
+      fumble: extra.fumbleValue === undefined ? null : extra.fumbleValue,
+      kind: directed ? 'directed' : (unarmed ? 'unarmed' : 'melee'),
       canParry: !directed,
       blocks: []
     });
@@ -599,6 +610,82 @@ function parseGuildRules(text) {
     });
   });
   return out;
+}
+
+/* ================= Loitsujen vaikutukset =================
+   Oma välilehti, jossa yksi rivi per vaikutus — sama loitsu voi vaikuttaa
+   kahteen asiaan (Shadow: +25 Hiivi ja +75 Piileskele).
+
+     SPELL BONUS
+     Loitsu        Lista             Tyyppi  Kohde           Arvo  Kesto  Oletus  Huomio
+     Shield I      Attack Avoidance  DB      melee+missile     25  kesto  kyllä
+     Shadow        Cloaking          taito   Hiivi             25  kesto  kyllä
+     Sly Ears      Sense Mastery     taito   Havannointi       50  kesto  kyllä   vain kuulo
+
+   Tyyppi:  DB        = puolustusbonus (myös "−25 hyökkääjän heittoon" kirjataan
+                        tänne positiivisena, koska vaikutus on sama)
+            taito     = lisä nimettyyn taitoon
+            hyökkäys  = loitsu on valittavissa hyökkäystyypiksi Taistelu-näkymässä
+   Kohde:   taidolla taidon nimi kuten Skills-välilehdellä; DB:llä melee, missile,
+            "melee+missile" tai kaikki
+   Kesto:   kesto = voimassa kunnes poistetaan · kerta = yhteen hyökkäykseen
+   Oletus:  onko bonus päällä heti aktivoinnin jälkeen */
+
+function parseSpellBonusGrid(g) {
+  const head = findLabel(g, 'SPELL BONUS') || findLabel(g, 'LOITSUJEN VAIKUTUKSET');
+  const hr = head ? head.r + 1 : findRowWith(g, 'Loitsu');
+  if (hr < 0) return [];
+
+  const col = (...names) => {
+    for (const n of names) {
+      const c = findInRow(g, hr, n);
+      if (c >= 0) return c;
+    }
+    return -1;
+  };
+  const cSpell = col('Loitsu', 'Spell');
+  const cList = col('Lista', 'List');
+  const cType = col('Tyyppi', 'Type');
+  const cTarget = col('Kohde', 'Target');
+  const cValue = col('Arvo', 'Value', 'Bonus');
+  const cScope = col('Kesto', 'Scope');
+  const cDefault = col('Oletus', 'Default');
+  const cNote = col('Huomio', 'Note');
+  if (cSpell < 0 || cValue < 0) return [];
+
+  const out = [];
+  for (let r = hr + 1; r < g.length; r++) {
+    const spell = cellAt(g, r, cSpell);
+    if (!spell) break;
+
+    const rawType = norm(cellAt(g, r, cType));
+    const type = /hy|atta/.test(rawType) ? 'attack'
+               : /taito|skill/.test(rawType) ? 'skill'
+               : 'db';
+    const scope = /kerta|once|one/.test(norm(cellAt(g, r, cScope))) ? 'once' : 'lasting';
+    const defRaw = cellAt(g, r, cDefault);
+
+    out.push({
+      id: 'sb-' + slug(spell) + '-' + r,
+      spell: spell,
+      list: cellAt(g, r, cList),
+      type: type,
+      target: cellAt(g, r, cTarget),
+      value: asNum(cellAt(g, r, cValue)),
+      scope: scope,
+      defaultOn: defRaw === '' ? true : asBool(defRaw),
+      note: cNote >= 0 ? cellAt(g, r, cNote) : ''
+    });
+  }
+  return out;
+}
+
+/** Rivin numero, jolta annettu otsikko löytyy. -1 jos ei löydy. */
+function findRowWith(g, label) {
+  for (let r = 0; r < g.length; r++) {
+    if (findInRow(g, r, label) >= 0) return r;
+  }
+  return -1;
 }
 
 /* ================= Rules-välilehti =================

@@ -40,6 +40,14 @@ const Magic = {
     });
 
     $('#btnCast').addEventListener('click', () => this.cast());
+
+    $('#activeSpells').addEventListener('click', e => {
+      const b = e.target.closest('button[data-deactivate]');
+      if (!b) return;
+      haptic();
+      this.deactivate(b.dataset.deactivate);
+      toast('Loitsu poistettu aktiivisista.');
+    });
   },
 
   spells() { return (Store.character && Store.character.spells) || []; },
@@ -68,9 +76,83 @@ const Magic = {
       toast('Voimapisteet eivät riitä (' + Store.session.ppCur + ' / ' + sp.pp + ').');
       return;
     }
+    // Ilman ajastinta uudelleenloitsiminen ei tuo mitään, joten vahinkoklikkaus
+    // ei saa viedä voimapisteitä.
+    if (Rules.spellHasEffect(Store.character, sp.name) &&
+        (Store.session.activeSpells || []).some(a => norm(a.spell) === norm(sp.name))) {
+      toast(sp.name + ' on jo aktiivisena. Poista se ensin, jos haluat loitsia uudelleen.');
+      return;
+    }
     haptic();
     Store.update(s => { s.ppCur = clamp(s.ppCur - sp.pp, 0, Store.character.vitals.ppMax); });
-    toast(sp.name + ' loitsittu — ' + sp.pp + ' pp, jäljellä ' + Store.session.ppCur + '.');
+
+    // Kestovaikutteinen loitsu jää seurattavaksi, kunnes pelaaja poistaa sen.
+    const lasting = Rules.spellHasEffect(Store.character, sp.name);
+    if (lasting) this.activate(sp.name);
+
+    toast(sp.name + ' loitsittu — ' + sp.pp + ' pp, jäljellä ' + Store.session.ppCur +
+          (lasting ? '. Lisätty aktiivisiin.' : '.'));
+  },
+
+  /* ---------------- Aktiiviset loitsut ----------------
+     Ei ajastinta: loitsu jää listalle kunnes pelaaja poistaa sen. Vaikutukset
+     luetaan Sheetin loitsuvälilehdeltä ja ne huomioidaan Taistelu- ja
+     Teot-näkymissä niin kauan kuin loitsu on listalla. */
+
+  activate(spellName) {
+    // Sama loitsu ei mene listalle kahdesti: vahinkoklikkaus kaksinkertaistaisi
+    // muuten bonuksen huomaamatta.
+    const already = (Store.session.activeSpells || [])
+      .find(a => norm(a.spell) === norm(spellName));
+    if (already) return already;
+
+    const entry = {
+      id: 'ac' + Date.now() + Math.floor(Math.random() * 1000),
+      spell: spellName,
+      at: new Date().toISOString(),
+      round: Store.session.round
+    };
+    Store.update(s => { s.activeSpells.push(entry); });
+    return entry;
+  },
+
+  deactivate(id) {
+    Store.update(s => {
+      s.activeSpells = s.activeSpells.filter(a => a.id !== id);
+    });
+  },
+
+  renderActive() {
+    const c = Store.character;
+    const list = $('#activeSpells');
+    const active = Store.session.activeSpells || [];
+    list.innerHTML = '';
+
+    $('#activeCount').textContent = active.length ? active.length + ' voimassa' : 'ei yhtään';
+
+    if (!active.length) {
+      list.appendChild(el('li', { class: 'empty',
+        text: 'Loitsittu kestovaikutus ilmestyy tähän.' }));
+      return;
+    }
+
+    active.forEach(a => {
+      const rows = Rules.spellBonusRows(c, a.spell).filter(b => b.type !== 'attack');
+      const effects = rows.map(b => {
+        const what = b.type === 'db' ? Rules.scopeLabel(b) : b.target;
+        return signed(b.value) + ' ' + what + (b.note ? ' (' + b.note + ')' : '');
+      });
+
+      list.appendChild(el('li', { class: 'active-spell' }, [
+        el('div', { class: 'as-main' }, [
+          el('span', { class: 'as-name', text: a.spell }),
+          el('span', { class: 'as-effect', text: effects.length
+            ? effects.join(' · ')
+            : 'ei kirjattua vaikutusta loitsuvälilehdellä' })
+        ]),
+        el('button', { class: 'coin-btn remove', 'data-deactivate': a.id, text: '✕' })
+      ]));
+    });
   },
 
   render() {
@@ -92,6 +174,7 @@ const Magic = {
       : cur === 0 ? 'Voimapisteet lopussa — ei loitsuja.'
       : affordable + ' / ' + usable.length + ' osatusta loitsusta käytettävissä.';
 
+    this.renderActive();
     this.renderSelected();
     this.renderList();
   },

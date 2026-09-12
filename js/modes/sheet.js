@@ -201,10 +201,13 @@ const SheetView = {
     const gl = $('#combatList');
     gl.innerHTML = '';
     c.weapons.forEach(w => {
+      const f = Rules.fumbleFor(w);
+      const fumbleText = f ? 'fumble ' + (f < 10 ? '0' + f : f) +
+                             (Number.isFinite(w.fumble) && w.fumble > 0 ? '' : ' (oletus)') : '';
       gl.appendChild(el('li', { class: 'gear' }, [
         el('div', { class: 'gear-main' }, [
           el('span', { class: 'gear-name', text: w.name }),
-          el('span', { class: 'gear-note', text: [w.table, w.note].filter(Boolean).join(' · ') })
+          el('span', { class: 'gear-note', text: [w.table, w.note, fumbleText].filter(Boolean).join(' · ') })
         ]),
         el('b', { class: 'gear-val', text: 'OB ' + w.ob })
       ]));

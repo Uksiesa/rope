@@ -6,6 +6,7 @@ const Action = {
   filter: { text: '', category: null },
   selectedId: null,
   chain: [],          // avoimen heiton osaheitot
+  spellOff: {},       // heittokohtaisesti pois kytketyt loitsubonukset
   recognition: null,
   listening: false,
 
@@ -34,6 +35,15 @@ const Action = {
 
     ['#actionRoll', '#actionMod'].forEach(sel =>
       $(sel).addEventListener('input', () => this.renderTotal()));
+
+    $('#spellChips').addEventListener('click', e => {
+      const b = e.target.closest('button[data-spellkey]');
+      if (!b) return;
+      haptic();
+      const k = b.dataset.spellkey;
+      this.spellOff[k] = !this.spellOff[k];
+      this.renderSelected();
+    });
 
     $('#actionChain').addEventListener('click', e => {
       if (!e.target.closest('button[data-addroll]')) return;
@@ -77,6 +87,12 @@ const Action = {
       s.recentSkills = [id].concat((s.recentSkills || []).filter(x => x !== id)).slice(0, 5);
     });
     this.chain = [];
+    // Loitsubonusten oletustila tulee loitsuvälilehden Oletus-sarakkeesta,
+    // ja pelaaja voi poiketa siitä yhtä heittoa varten.
+    this.spellOff = {};
+    const sk = this.skills().find(x => x.id === id);
+    Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, sk)
+      .forEach(b => { if (!b.defaultOn) this.spellOff[b.key] = true; });
     $('#actionRoll').value = '';
     $('#actionMod').value = '';
     this.renderSelected();
@@ -160,6 +176,20 @@ const Action = {
     ].filter(Boolean).join(' · ');
     $('#selBonus').textContent = signed(s.total);
 
+    /* --- Aktiivisten loitsujen vaikutus tähän taitoon --- */
+    const chips = $('#spellChips');
+    const spellBonuses = Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, s);
+    chips.innerHTML = '';
+    chips.classList.toggle('hidden', !spellBonuses.length);
+    spellBonuses.forEach(b => {
+      const on = !this.spellOff[b.key];
+      chips.appendChild(el('button', {
+        class: 'chip spell-chip' + (on ? ' active' : ''),
+        'data-spellkey': b.key,
+        text: (on ? '✓ ' : '') + b.spell + ' ' + signed(b.value) + (b.note ? ' · ' + b.note : '')
+      }));
+    });
+
     const bd = $('#selBreakdown');
     bd.innerHTML = '';
     (s.breakdown || []).forEach(b => {
@@ -177,6 +207,9 @@ const Action = {
     const pending = numOf($('#actionRoll'), null);
     const rolls = this.chain.concat(Number.isFinite(pending) ? [pending] : []);
     const mod = numOf($('#actionMod'), 0);
+    const spellSum = Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, s)
+      .filter(b => !this.spellOff[b.key])
+      .reduce((sum, b) => sum + b.value, 0);
     const out = $('#actionTotal').querySelector('b');
     const formula = $('#actionFormula');
 
@@ -184,14 +217,16 @@ const Action = {
 
     if (!rolls.length) {
       out.textContent = '—';
-      formula.textContent = 'Bonus ' + signed(s.total) + ' — syötä heitto';
+      formula.textContent = 'Bonus ' + signed(s.total + spellSum) +
+        (spellSum ? ' (loitsut ' + signed(spellSum) + ')' : '') + ' — syötä heitto';
       return;
     }
     const roll = rollChainTotal(rolls);
-    out.textContent = fmtNum(roll + s.total + mod);
+    out.textContent = fmtNum(roll + s.total + mod + spellSum);
     formula.textContent =
       (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
       ' (heitto) ' + signed(s.total) + ' (' + (s.display || s.name) + ')' +
+      (spellSum ? ' ' + signed(spellSum) + ' (loitsut)' : '') +
       (mod ? ' ' + signed(mod) + ' (modi)' : '');
   },
 
