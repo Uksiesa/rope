@@ -94,10 +94,13 @@ Otsikkorivi tunnistetaan solusta `Skill/Capability`; sen alta luetaan sarakkeet:
 
 | Otsikko | Merkitys |
 |---|---|
-| `Total` (Bonuses-lohko) | taidon kokonaisbonus |
-| `Current` (Levels-lohko) | hankitut tasot |
-| `Rank`, `Stat`, `Level`, `Item`, `Misc.` | bonuksen erittely, näkyy taidon alla |
-| `Classes`, `Cost` | luetaan, mutta ei näytetä appissa |
+| `Classes` | taidon ominaisuudet — **raakasyöte**, bonus lasketaan näiden keskiarvona |
+| `Cost` | kehityspistehinta, näkyy Seuraava taso -näkymässä |
+| `Item`, `Misc.` | esine- ja erikoisbonus — **raakasyötteitä** |
+| `-- SKILL RANKS --` -ruudukko | tasot ja seuraavan tason suunnitelma — **raakasyöte** |
+| `Total`, `Current`, `Rank`, `Stat`, `Level` | lomakkeen oma laskenta; appi laskee nämä itse ja käyttää sarakkeita vain vertailuun |
+
+Bonuslaskenta ja ruudukon merkinnät: [bonuslaskenta.md](bonuslaskenta.md).
 
 - **Kategoriat** tunnistetaan riveistä, joilla on vain nimi (Havannointi,
   Keskittyminen, Kielet, Magia, Sosiaaliset, Taistelu, Taiteet, Tieteet, Ulkoilu,

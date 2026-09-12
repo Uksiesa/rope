@@ -33,7 +33,8 @@ function writeJson(key, value) {
 
 const Store = {
 
-  character: null,
+  raw: null,          // lomakkeen raakasyötteet sellaisenaan
+  character: null,    // Rules.compute(raw) — johdetut bonukset laskettuna
   session: null,
   durable: null,
   listeners: [],
@@ -48,7 +49,9 @@ const Store = {
     });
     if (!data.vitals) data.vitals = { hitsMax: 0, ppMax: 0 };
     if (!data.money) data.money = {};
-    this.character = data;
+    this.raw = data;
+    Rules.use(data.rules || null);
+    this.character = Rules.compute(data, this.durable && this.durable.levelUp);
     if (meta && meta.cache) {
       writeJson(STORAGE.character, data);
       try { localStorage.setItem(STORAGE.fetchedAt, new Date().toISOString()); } catch (e) { /* ohitetaan */ }
@@ -101,6 +104,7 @@ const Store = {
       langRanks: {},        // sama avain: lomakkeen tason päälle ansaitut tasot
       log: [],              // päiväkirja, ks. Adventure-moduuli
       itemLocations: {},    // { esineen id: kantopaikka }
+      levelUp: null,        // appissa tehty tasonnosto, kunnes se on viety Sheetiin
       updatedAt: null
     };
   },
@@ -131,6 +135,14 @@ const Store = {
   update(fn) {
     fn(this.session);
     this.saveSession();
+    this.emit();
+  },
+
+  /** Laskee johdetut bonukset uudelleen (tasonnoston tai sääntömuutoksen jälkeen). */
+  recompute() {
+    if (!this.raw) return;
+    this.character = Rules.compute(this.raw, this.durable && this.durable.levelUp);
+    this.reconcile();
     this.emit();
   },
 
@@ -225,16 +237,35 @@ const Store = {
       langTargets: Object.assign({}, d.langTargets),
       langRanks: Object.assign({}, d.langRanks),
       itemLocations: Object.assign({}, d.itemLocations),
+      levelUp: d.levelUp ? JSON.parse(JSON.stringify(d.levelUp)) : null,
       log: d.log.map(e => Object.assign({}, e))
     };
   },
 
   /** Sama tekstinä, valmiina liitettäväksi Sheetiin (sarkainerotettu). */
   exportDurableTsv() {
+    const TAB = String.fromCharCode(9);
     const d = this.durable;
     const lines = [];
     lines.push('key\tvalue');
     lines.push('updatedAt\t' + (d.updatedAt || ''));
+    // Tasonnosto: uudet tasot ja ominaisuusarvot lomakkeeseen kirjattavaksi
+    if (d.levelUp) {
+      lines.push('');
+      lines.push('TASONNOSTO');
+      lines.push('uusi taso' + TAB + d.levelUp.level);
+      lines.push('kehityspisteet' + TAB + d.levelUp.spent);
+      const names = this.character
+        ? this.character.skills.reduce((m, x) => { m[x.id] = x.display || x.name; return m; }, {})
+        : {};
+      Object.keys(d.levelUp.ranks || {}).forEach(id =>
+        lines.push('taito: ' + (names[id] || id) + TAB + d.levelUp.ranks[id] + ' tasoa'));
+      Object.keys(d.levelUp.stats || {}).forEach(code => {
+        const st = d.levelUp.stats[code];
+        lines.push('ominaisuus: ' + code + TAB + st.temp + ' / ' + st.pot);
+      });
+    }
+
     lines.push('day\t' + d.day);
     lines.push('food\t' + d.food);
     CONFIG.coins.forEach(c => lines.push(c.key + '\t' + (d.money[c.key] || 0)));

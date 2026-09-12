@@ -165,13 +165,23 @@ const SheetView = {
     if (!guilds.length) {
       gl2.appendChild(el('li', { class: 'empty', text: 'Ei kiltajäsenyyksiä.' }));
     }
+    const rules = (Store.raw && Store.raw.guildRules) || [];
     guilds.forEach(g => {
+      // Killan omat tasoedut, jotka hahmon kiltataso jo avaa
+      const own = rules.filter(r => Rules.guildQualifies([g], r));
+      const perks = own.map(r => {
+        const what = r.kind === 'stat' ? r.target : r.target + ' -taito';
+        const howMuch = r.perLevel ? r.amount + '×taso' : signed(r.amount);
+        return 'taso ' + r.level + ': ' + howMuch + ' ' + what;
+      });
       gl2.appendChild(el('li', { class: 'guild' }, [
         el('div', { class: 'guild-badge', text: g.level ? String(g.level) : '·' }),
         el('div', { class: 'guild-main' }, [
           el('span', { class: 'guild-name', text: g.name }),
           el('span', { class: 'guild-rank', text: [g.rank || ('Taso ' + g.level), g.since ? 'vuodesta ' + g.since : ''].filter(Boolean).join(' · ') }),
-          g.note ? el('span', { class: 'guild-note', text: g.note }) : el('span')
+          perks.length
+            ? el('span', { class: 'guild-note', text: perks.join(' · ') })
+            : (g.note ? el('span', { class: 'guild-note', text: g.note }) : el('span'))
         ])
       ]));
     });
@@ -295,8 +305,31 @@ const SheetView = {
       ['Rahat', Money.format(d.money)],
       ['Kielitunnit', langTotal + ' h'],
       ['Päiväkirja', d.log.filter(e => !DayLog.isEmpty(e)).length + ' merkintää'],
+      ['Tasonnosto', d.levelUp ? 'taso ' + d.levelUp.level + ' odottaa vientiä' : '—'],
       ['Viety Sheetiin', pushed ? new Date(pushed).toLocaleString('fi-FI') : 'ei koskaan']
     ]);
+
+    const diffs = Rules.compare(c);
+    const conflicts = diffs.filter(x => x.conflict).length;
+    const known = diffs.filter(x => x.knownError).length;
+    fill('#rulesKv', [
+      ['Laskettu raakasyötteistä', c.skills.filter(s => s.computed).length + ' / ' + c.skills.length + ' taitoa'],
+      ['Taulukot', Rules.tables && Store.raw && Store.raw.rules ? 'Sheetin Rules-välilehti' : 'js/config.js -oletukset'],
+      ['Selvitettävää', conflicts + (diffs.length - conflicts - known ? ' + ' + (diffs.length - conflicts - known) + ' eroa' : '')],
+      ['Tunnettuja lomakevirheitä', known]
+    ]);
+    const dl = $('#rulesDiffs');
+    dl.innerHTML = '';
+    diffs.forEach(x => dl.appendChild(el('li', {
+      class: 'rr diff-row' + (x.conflict ? ' conflict' : '') + (x.knownError ? ' known' : '')
+    }, [
+      el('div', { class: 'diff-main' }, [
+        el('span', { text: x.name }),
+        x.note ? el('span', { class: 'diff-note', text: x.note }) : el('span')
+      ]),
+      el('b', { text: signed(x.laskettu) + '  (lomake ' + signed(x.lomake) + ')' })
+    ])));
+    $('#rulesDiffCard').classList.toggle('hidden', !diffs.length);
 
     fill('#sessionKv', [
       ['Osumapisteet', s.hpCur + ' / ' + c.vitals.hitsMax],

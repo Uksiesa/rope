@@ -19,6 +19,7 @@ const App = {
     Adventure.init();
     Action.init();
     Magic.init();
+    LevelUp.init();
     SheetView.init();
     this.initTabs();
 
@@ -51,7 +52,10 @@ const App = {
     this.view = view;
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
     $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
-    try { localStorage.setItem('tm.view', view); } catch (e) { /* ohitetaan */ }
+    // Seuraava taso on alinäkymä, ei välilehti: sitä ei muisteta avausnäkymäksi.
+    if (view !== 'levelup') {
+      try { localStorage.setItem('tm.view', view); } catch (e) { /* ohitetaan */ }
+    }
     window.scrollTo({ top: 0 });
   },
 
@@ -64,6 +68,7 @@ const App = {
     Adventure.render();
     Action.render();
     Magic.render();
+    LevelUp.render();
     SheetView.render();
   },
 

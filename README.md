@@ -13,7 +13,12 @@ offline-käyttöä varten. Lomakkeen luku on kuvattu tiedostossa
 
 | Välilehti | Sisältö |
 |---|---|
-| **Hahmo** | Hahmon kuva, ominaisuudet, killat, aseet, taidot, varusteet kantopaikoittain, tausta ja datan hallinta |
+| **Hahmo** | Hahmon kuva, ominaisuudet, killat, aseet, taidot, varusteet kantopaikoittain, tausta ja datan hallinta. Täältä pääsee myös **Seuraava taso** -näkymään |
+
+**Seuraava taso** on oma näkymänsä Hahmo-välilehden napin takana — ei alapalkissa,
+koska tasonnosto tehdään sessioiden välissä. Se lukee Sheetsin taitoruudukkoon
+merkityn kehityspistesuunnitelman, näyttää bonukset ennen ja jälkeen, ja
+"Nosta tasoa" laskee kaiken uudelleen uusilla ominaisuusarvoilla.
 | **Matka** | Kampanjakalenteri, kuunkierto, matkapäivät, muona, rahat neljänä kolikkotyyppinä, kielten opiskelutunnit ja päivä päivältä täyttyvä päiväkirja |
 | **Teot** | Taidon bonus + käsin syötetty heitto. Haku, kategoriasuodattimet ja puhehaku |
 | **Taistelu** | Osumapisteet, taistelukierrokset ja tilavaikutukset (tainnutus laskee alas, verenvuoto vähentää hp:tä kierroksen lopussa), aseen OB jaettuna hyökkäykseen ja parryyn, DB:n komponentit togglattavina, heittolaskuri |
@@ -67,6 +72,7 @@ näyttää vanhaa koodia.
 | Muonan lähtömäärä ja varoitusraja | `js/config.js` → `food` |
 | Kielten tuntitavoitteet | appissa, Matka-välilehden "Tavoite"-nappi |
 | Avoimen heiton rajat | `js/config.js` → `openEnded` |
+| Bonustaulukot | Sheetin `Rules`-välilehti, oletukset `js/config.js` → `rules` |
 | Varusteiden kantopaikat | `js/config.js` → `slots` |
 | Tilavaikutusten pikavalinnat | `js/config.js` → `combat.effectPresets` |
 | Datalähde (seed ↔ sheets) | `js/config.js` → `data.source` |
@@ -86,6 +92,11 @@ näyttää vanhaa koodia.
 Ero on koko datamallin ydin: Sheetin päivitys ei nollaa kertynyttä dataa, eikä
 uuden session aloitus hukkaa kerättyjä kielitunteja tai rahoja. Yksityiskohdat ja
 Sheetiin kirjoittava Apps Script: [docs/kertyva-data.md](docs/kertyva-data.md).
+
+**Hahmodata on raakasyötteitä.** Sheet kertoo ominaisuusarvot, taitojen tasot,
+kiltatasot sekä esine- ja erikoisbonukset; appi laskee niistä taitobonukset,
+aseiden OB:n, puolustuksen, voimapisteet ja kehityspisteet. Kaavat ja Rules-
+välilehden rakenne: [docs/bonuslaskenta.md](docs/bonuslaskenta.md).
 
 Mikään ei mene ulkopuoliselle palvelimelle Sheetin lukua ja valinnaista kertyvän
 datan vientiä lukuun ottamatta.

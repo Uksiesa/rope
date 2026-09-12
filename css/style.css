@@ -793,3 +793,77 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
   color: var(--gold); background: #2c2415;
   animation: throb 1.6s ease-in-out infinite;
 }
+
+
+/* ================= Seuraava taso ================= */
+
+.subview-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+}
+.subview-head h2 {
+  font-size: 18px; color: var(--text); flex: 1;
+}
+.subview-head button { min-height: 38px; padding: 6px 12px; }
+
+button.big-link {
+  margin: 0 0 12px;
+  min-height: 50px;
+  font-family: Georgia, serif; font-size: 15px; letter-spacing: .03em;
+}
+
+.dp-bar {
+  height: 8px; border-radius: 5px; background: #2a231c;
+  overflow: hidden; margin: 2px 0 12px; border: 1px solid var(--line-soft);
+}
+.dp-fill { height: 100%; background: linear-gradient(90deg, #4d6a86, var(--steel)); transition: width .25s; }
+.dp-fill.over { background: linear-gradient(90deg, #7a2d24, #b2453a); }
+.dp-stat span { color: var(--text-faint); }
+
+.plan-list { list-style: none; margin: 0; padding: 0; }
+.plan-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; border-bottom: 1px solid var(--line-soft);
+}
+.plan-row:last-child { border-bottom: 0; }
+.plan-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.plan-name { font-size: 14.5px; }
+.plan-sub { font-size: 11.5px; color: var(--text-faint); }
+.plan-nums { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.plan-ranks { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+.plan-bonus { display: flex; align-items: baseline; gap: 6px; font-family: Georgia, serif; }
+.pb-old { font-size: 12px; color: var(--text-faint); text-decoration: line-through; }
+.plan-bonus b { font-size: 16px; color: var(--gold); }
+.plan-dp {
+  font-family: Georgia, serif; font-size: 13px; color: var(--steel);
+  min-width: 46px; text-align: right; white-space: nowrap;
+}
+
+.statedit { margin: 10px 0 14px; }
+.stat-edit-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--line-soft);
+}
+.stat-edit-row:last-child { border-bottom: 0; }
+.se-code {
+  width: 26px; flex: none; font-size: 11px; letter-spacing: .08em;
+  color: var(--text-faint); text-transform: uppercase;
+}
+.se-name { flex: 1; font-size: 13px; color: var(--text-dim); min-width: 0; }
+.stat-edit-row .mini-input { width: 58px; flex: none; text-align: center; min-height: 38px; padding: 6px; }
+.se-bonus {
+  width: 40px; flex: none; text-align: right;
+  font-family: Georgia, serif; font-size: 14px; color: var(--gold);
+}
+
+
+/* ================= Laskennan poikkeamat ================= */
+
+.diff-row { align-items: flex-start; }
+.diff-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.diff-note { font-size: 11px; color: var(--gold-soft); }
+
+.diff-row.conflict .diff-note { color: var(--blood); }
+.diff-row.conflict b { color: var(--blood); }
+.diff-row.known { opacity: .55; }
+.diff-row.known .diff-note { color: var(--text-faint); }

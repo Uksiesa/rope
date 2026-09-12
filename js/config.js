@@ -18,6 +18,8 @@ const CONFIG = {
       gids: {
         character: 1754872422,   // "Character"
         skills:    761231743,    // "Skills or capabilities"
+        rules:     1135503206,   // "Rules": ominaisuusbonus-, kehityspiste- ja
+                                 //          voimapistetaulukot + taitoluokkien tasobonus
         durable:   null          // syntyy vasta kun kertyvän datan vienti otetaan käyttöön
       },
 
@@ -116,6 +118,91 @@ const CONFIG = {
       { type: 'bleed', name: 'Verenvuoto',       perRound: 1 },
       { type: 'bleed', name: 'Paha verenvuoto',  perRound: 3 }
     ]
+  },
+
+  /* ---------- Bonuslaskennan taulukot ----------
+     Nämä ovat oletukset. Sheetin Rules-välilehti korvaa ne, jos se on olemassa
+     ja gids.rules on asetettu. Arvot alla on johdettu Ballarionin lomakkeesta,
+     joten ne kattavat vain hänen nykyiset ominaisuusarvonsa — täydellinen
+     taulukko kuuluu Rules-välilehdelle. */
+  rules: {
+    // Tasojen tuotto: 0 tasoa on rangaistus, sitten laskeva tuotto.
+    noRankPenalty: -25,
+    rankProgression: [
+      { ranks: 10, perRank: 5 },
+      { ranks: 10, perRank: 2 },
+      { ranks: 10, perRank: 1 }
+    ],
+
+    // Ominaisuusarvo -> bonus
+    statBonus: [
+      { from: 50, to: 50, value: 0 },
+      { from: 59, to: 59, value: 1 },
+      { from: 67, to: 67, value: 3 },
+      { from: 70, to: 70, value: 0 },
+      { from: 73, to: 73, value: 5 },
+      { from: 90, to: 90, value: 12 },
+      { from: 95, to: 95, value: 20 },
+      { from: 96, to: 96, value: 22 },
+      { from: 97, to: 97, value: 24 },
+      { from: 98, to: 98, value: 26 },
+      { from: 101, to: 101, value: 35 }
+    ],
+
+    // Ominaisuusarvo -> kehityspisteitä tasoa kohti
+    devPoints: [
+      { from: 50, to: 50, value: 9.6 },
+      { from: 59, to: 59, value: 9.9 },
+      { from: 90, to: 90, value: 12.8 },
+      { from: 95, to: 95, value: 13.8 },
+      { from: 96, to: 96, value: 14.0 }
+    ],
+
+    // Ominaisuusarvo -> voimapisteitä tasoa kohti
+    powerPoints: [
+      { from: 73, to: 73, value: 2.4 },
+      { from: 98, to: 98, value: 3.9 },
+      { from: 101, to: 101, value: 4.2 }
+    ],
+
+    // Ammatin tasokerroin taitokategorioittain (Laulaja)
+    levelBonus: {
+      'Sosiaaliset': 3,
+      'Kielet': 2,
+      'Taiteet': 2,
+      'Urheilu': 1
+    },
+
+    // Kiltatason tuottamat ominaisuusbonukset. Tyhjänä käytetään lomakkeen
+    // Extra-saraketta sellaisenaan.
+    guildBonus: [],
+
+    // Osumapisteet: perusarvo + kestävyysbonus + taso × tasokerroin.
+    // Kerroin riippuu ammatista ja voi vaihdella tason mukaan; Laulajalla se on
+    // aina 2. Väliperustainen taulukko, jossa Alkaen/Asti ovat hahmon tasoja.
+    hitsPerLevel: [
+      { from: 1, to: 99, value: 2 }
+    ],
+
+    // Taidot joiden Classes-solu ei kerro oikeaa ominaisuutta. Lomakkeessa
+    // aseettoman taistelun rivit ovat identtiset, vaikka lyönti käyttää Voimaa
+    // ja heitto Ketteryyttä.
+    classesOverride: {
+      'Aseeton taistelu - lyönti': 'Vo',
+      'Aseeton taistelu - heitto': 'K'
+    },
+
+    // Taidot joissa lomakkeen oma luku tiedetään virheelliseksi. Laskennan tulos
+    // on oikea; nämä näkyvät poikkeamalistassa erikseen merkittyinä.
+    sheetErrors: ['Toisapu', 'Sääennustus'],
+
+    settings: {
+      hitsBase: 30,
+      hitsStat: 'T',
+      quicknessStat: 'N',
+      ppStats: ['O', 'Va', 'E'],
+      dpStats: ['T', 'K', 'I', 'M', 'P']
+    }
   },
 
   /* ---------- Avoin heitto ----------

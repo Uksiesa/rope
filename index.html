@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 
@@ -308,6 +308,53 @@
     </div>
   </section>
 
+  <!-- ==================== SEURAAVA TASO (ei alapalkissa) ==================== -->
+  <section class="view" id="view-levelup">
+    <div class="subview-head">
+      <button class="ghost" id="btnLevelUpBack">← Hahmo</button>
+      <h2 id="levelUpTitle">Seuraava taso</h2>
+    </div>
+
+    <div class="status-banner hidden" id="levelUpBanner"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Kehityspisteet</h2>
+        <b class="big-num" id="dpLeft">—</b>
+      </div>
+      <div class="dp-bar"><div class="dp-fill" id="dpFill"></div></div>
+      <ul class="kv-list compact" id="dpKv"></ul>
+      <button class="ghost wide" id="btnFetchPlan">Hae suunnitelma Sheetsistä</button>
+      <div class="hint">Merkitse Sheetsin taitoruudukkoon käytetyt kehityspisteet numerona.
+        <b>X</b> tarkoittaa aiemmin maksettua tasoa, joka odottaa opiskelua.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Suunnitellut ostot</h2>
+        <span class="weight-tag" id="planCount">—</span>
+      </div>
+      <ul class="plan-list" id="planList"></ul>
+    </div>
+
+    <div class="card hidden" id="pendingCard">
+      <div class="card-head"><h2>Odottaa opiskelua</h2></div>
+      <ul class="plan-list" id="pendingList"></ul>
+      <div class="hint">Kehityspisteet on maksettu aiemmalla tasolla, mutta taso ei nouse
+        ennen kuin opiskelu on valmis. Nämä eivät muutu tasonnostossa.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Nosta tasoa</h2></div>
+      <p class="hint">Tasonnosto korottaa taidot suunnitelman mukaisiksi ja laskee kaikki
+        bonukset, kehityspisteet, voimapisteet ja puolustuksen uudelleen. Anna ensin
+        ominaisuuksien uudet arvot.</p>
+      <div class="statedit" id="statEdit"></div>
+      <button class="primary wide" id="btnDoLevelUp">Nosta taso <span id="nextLevelNum"></span></button>
+      <button class="ghost wide hidden danger" id="btnUndoLevelUp">Kumoa tasonnosto</button>
+    </div>
+  </section>
+
   <!-- ============================ HAHMO ============================ -->
   <section class="view" id="view-sheet">
     <div class="hero">
@@ -330,6 +377,8 @@
     </div>
 
     <div class="stat-grid" id="statGrid"></div>
+
+    <button class="primary wide big-link" id="btnLevelUp">Seuraava taso →</button>
 
     <div class="card">
       <div class="card-head"><h2>Killat</h2></div>
@@ -374,6 +423,14 @@
       <ul class="kv-list" id="sourceKv"></ul>
       <button class="ghost wide" id="btnRefresh2">Päivitä Sheetsistä</button>
 
+      <h3 class="sub-head">Bonuslaskenta</h3>
+      <ul class="kv-list" id="rulesKv"></ul>
+      <div id="rulesDiffCard" class="hidden">
+        <ul class="rr-list" id="rulesDiffs"></ul>
+        <div class="hint">Nämä taidot laskettiin eri tulokseen kuin lomakkeessa. Lomakkeen luku
+          on suluissa. Ero johtuu puuttuvasta säännöstä tai lomakkeen omasta poikkeuksesta.</div>
+      </div>
+
       <h3 class="sub-head">Kertyvä data — säilyy sessioiden yli</h3>
       <ul class="kv-list" id="durableKv"></ul>
       <div class="quick-row">
@@ -403,16 +460,18 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=6"></script>
-<script src="js/seed-data.js?v=6"></script>
-<script src="js/util.js?v=6"></script>
-<script src="js/store.js?v=6"></script>
-<script src="js/sheets.js?v=6"></script>
-<script src="js/modes/battle.js?v=6"></script>
-<script src="js/modes/adventure.js?v=6"></script>
-<script src="js/modes/action.js?v=6"></script>
-<script src="js/modes/magic.js?v=6"></script>
-<script src="js/modes/sheet.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/config.js?v=15"></script>
+<script src="js/seed-data.js?v=15"></script>
+<script src="js/util.js?v=15"></script>
+<script src="js/rules.js?v=15"></script>
+<script src="js/store.js?v=15"></script>
+<script src="js/sheets.js?v=15"></script>
+<script src="js/modes/battle.js?v=15"></script>
+<script src="js/modes/adventure.js?v=15"></script>
+<script src="js/modes/action.js?v=15"></script>
+<script src="js/modes/magic.js?v=15"></script>
+<script src="js/modes/levelup.js?v=15"></script>
+<script src="js/modes/sheet.js?v=15"></script>
+<script src="js/app.js?v=15"></script>
 </body>
 </html>

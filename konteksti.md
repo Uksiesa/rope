@@ -144,6 +144,37 @@ typografista miinusta (U+2212), jonka ensimmäinen parseri siivosi pois merkkin�
 siitä, että ihmisluettavan lomakkeen parsiminen vaatii datan tarkistamista, ei vain
 rakenteen lukemista.
 
+## Päätökset (12.9.2026) — bonuslaskenta raakasyötteistä
+
+**Sheet on raakasyötteitä, appi laskee.** Aiemmin appi luki lomakkeen valmiiksi
+lasketut bonukset. Nyt `js/rules.js` laskee taitobonukset, aseiden OB:n,
+puolustuksen, osuma- ja voimapisteet sekä kehityspisteet ominaisuusarvoista,
+taitojen tasoista ja esine-/erikoisbonuksista. Näin tasonnosto päivittää kaiken
+kerralla eikä lomaketta tarvitse laskea käsin.
+
+**Kaavat johdettiin datasta, ei oletettu.** Tasobonusprogressio (0 tasoa −25,
+1–10 +5, 11–20 +2, 21–30 +1) täsmäsi kaikilla 112 rivillä, ja taidon
+ominaisuusbonus osoittautui Classes-sarakkeen keskiarvoksi (ei summaksi)
+109 rivillä. Vasta loput kysyttiin.
+
+**Lomakkeen lasketut sarakkeet jäivät paikalleen vertailuun.** Hahmo-välilehti
+kertoo montako taitoa laskettiin ja mitkä poikkeavat. Tämä paljasti kolme
+lomakkeen omaa poikkeusta ja sen, että laskenta antaa Ulkonäölle bonuksen jota
+lomakkeessa ei ole.
+
+**Taulukot Sheetin Rules-välilehdelle, ei koodiin.** Kampanjan säännöt pysyvät
+pelaajan hallussa. Parseri hyväksyy sekä yhden yhteisen väliaikataulukon että
+erilliset lohkot, koska lomakkeen tekijä valitsi edellisen.
+
+**Tasonnosto kirjautuu kertyvään dataan, ei Sheetiin.** Appi ei kirjoita
+lomakkeeseen, joten "Nosta tasoa" tallentaa uudet tasot ja ominaisuusarvot
+päällekirjoituksena ja tuottaa Sheetiin liitettävän yhteenvedon. Kun lomake on
+päivitetty, päällekirjoitus kumotaan.
+
+**Seuraava taso ei ole alapalkissa.** Tasonnosto tehdään sessioiden välissä, joten
+se ei ansaitse paikkaa viiden pelinaikaisen välilehden joukossa — nappi on
+Hahmo-välilehdellä.
+
 ## Vaihe ja seuraavat askeleet
 
 Vaihe 1 (valmis): mockup, jotta UI ja käyttövirta voidaan arvioida.

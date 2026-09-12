@@ -31,11 +31,20 @@ const Sheets = {
 
   async fetchCharacter() {
     const gids = CONFIG.data.sheets.gids;
-    const [character, skills] = await Promise.all([
+    const jobs = [
       this.fetchGrid(gids.character, 'Character'),
-      this.fetchGrid(gids.skills, 'Skills')
-    ]);
-    return parseCharacterSheet(character, skills);
+      this.fetchGrid(gids.skills, 'Skills'),
+      gids.rules
+        ? this.fetchGrid(gids.rules, 'Rules').catch(err => {
+            console.warn('Rules-välilehteä ei luettu:', err.message);
+            return null;
+          })
+        : Promise.resolve(null)
+    ];
+    const [character, skills, rules] = await Promise.all(jobs);
+    const out = parseCharacterSheet(character, skills);
+    out.rules = rules ? parseRulesGrid(rules) : null;
+    return out;
   },
 
   /* ---------- Kertyvän datan kirjoitus ----------
@@ -109,6 +118,14 @@ function cellAt(grid, r, c) {
   return String(row[c]).replace(/\s+/g, ' ').trim();
 }
 
+/** Kuten cellAt, mutta säilyttää rivinvaihdot. Monirivinen solu (esim. Muuta)
+    menettäisi rakenteensa, jos välilyönnit normalisoitaisiin. */
+function cellRawAt(grid, r, c) {
+  const row = grid[r];
+  if (!row || c < 0 || row[c] === undefined || row[c] === null) return '';
+  return String(row[c]).replace(/[ 	]+/g, ' ').trim();
+}
+
 /** Etsii solun, jonka teksti vastaa otsikkoa. Palauttaa { r, c } tai null. */
 function findLabel(grid, label, fromRow) {
   const want = norm(label);
@@ -170,19 +187,6 @@ function skillDisplayName(name) {
   return name;
 }
 
-/** Lomakkeen taitonimet ovat kirjanpitomuotoisia ("Lista 6 - Sound Control (50)").
-    Näytölle riisutaan järjestysnumerot ja luokittelevat etuliitteet pois; alkuperäinen
-    nimi säilyy kentässä name ja näkyy taidon tiedoissa. */
-function skillDisplayName(name) {
-  let m;
-  if ((m = name.match(/^Lista\s*\d+\s*-\s*(.+?)\s*(?:\(\d+\))?\s*$/i))) return m[1];
-  if ((m = name.match(/^Ase\s*\d+\s*-\s*(.+)$/i))) return m[1].trim();
-  if ((m = name.match(/^Kieli\s*\d+\s*-\s*(suullinen|kirjallinen)\s+(.+)$/i))) {
-    return m[2].trim() + ' — ' + (/kirjallinen/i.test(m[1]) ? 'kirjoitus' : 'puhe');
-  }
-  return name;
-}
-
 function slug(s) {
   return norm(s).replace(/[^a-z0-9åäö]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
@@ -228,6 +232,10 @@ function parseCharacterSheet(g, sg) {
       notes: parseMisc(g)
     },
 
+    // Kiltojen tasoedut Muuta-kentän tekstistä
+    guildRules: parseGuildRules(
+      (parseMisc(g).find(n => norm(n.label) === 'muuta') || {}).value || ''),
+
     vitals: {
       hitsMax: asNum(labelValue(g, 'Base hits')),
       ppMax: parseMagicPoints(g)
@@ -261,6 +269,7 @@ function parseStats(g) {
   const cAbbr = findInRow(g, head.r, 'Abbr.');
   const cTemp = findInRow(g, head.r, 'Temp.');
   const cPot = findInRow(g, head.r, 'Pot.');
+  const cDev = cPot + 1;   // "Dev. Pts." on Pot.-sarakkeen jäljessä
   const cNormal = findInRow(g, sub, 'Normal');
   const cExtra = findInRow(g, sub, 'Extra');
   const cTotal = findInRow(g, sub, 'Total');
@@ -277,9 +286,12 @@ function parseStats(g) {
       english: name,
       temp: asNum(cellAt(g, r, cTemp)),
       pot: asNum(cellAt(g, r, cPot)),
+      devPoints: asNum(cellAt(g, r, cDev)),
       bonusNormal: asNum(cellAt(g, r, cNormal)),
       bonusExtra: asNum(cellAt(g, r, cExtra)),
-      bonus: asNum(cellAt(g, r, cTotal))
+      bonus: asNum(cellAt(g, r, cTotal)),
+      // Onko lomakkeessa ylipäätään bonusta? Tyhjä solu ei ole nolla.
+      bonusGiven: hasNum(cellAt(g, r, cTotal)) || hasNum(cellAt(g, r, cNormal))
     });
   }
   return out;
@@ -462,6 +474,7 @@ function buildWeapons(g, skills) {
 
     out.push({
       id: 'w-' + slug(name),
+      skillId: sk.id,
       name: name,
       ob: sk.total,
       table: '',
@@ -532,13 +545,219 @@ function parseMisc(g) {
   for (let r = head.r + 1; r < g.length; r++) {
     const label = cellAt(g, r, head.c);
     if (!label) continue;
-    const value = valueRight(g, r, head.c, 3);
+    let value = '';
+    for (let i = head.c + 1; i <= head.c + 3 && !value; i++) value = cellRawAt(g, r, i);
     if (value) out.push({ label: label, value: value });
   }
   return out;
 }
 
+/* ================= Kiltojen tasoedut =================
+   Lomakkeen MISCELLANEOUS > Muuta -kenttä kuvaa kiltaedut vapaana tekstinä:
+
+     Viihdyttäjäkillan ominaisuusbonus tasolla 1: +1 ketteryys.
+     Viihdyttäjäkillan tasoetu tasolla 2: +1*taso havainnointi -taitoon.
+     Taikurikillan tasoetu tasolla 1: +5 ensiapu -taitoon.
+
+   Nämä jäsennetään säännöiksi, jotta ne päivittyvät hahmon tason ja kiltatason
+   mukana eikä niitä tarvitse muistaa kirjata käsin taitoriveille. */
+
+const STAT_NAMES_FI = {
+  'terveys': 'T', 'ketteryys': 'K', 'itsekuri': 'I', 'muisti': 'M',
+  'paattely': 'P', 'päättely': 'P', 'voima': 'Vo', 'nopeus': 'N',
+  'olemus': 'O', 'vaisto': 'Va', 'empatia': 'E', 'ulkonako': 'AP', 'ulkonäkö': 'AP'
+};
+
+function parseGuildRules(text) {
+  const out = [];
+  String(text || '').split(/[\r\n]+/).forEach(raw => {
+    const line = raw.trim();
+    if (!line) return;
+
+    const m = line.match(/^(.*?)kill(?:an|assa)\s+(tasoetu|ominaisuusbonus|ominaisuustaso)\s+tasolla\s+(\d+)\s*:\s*(.+)$/i);
+    if (!m) return;
+
+    const level = parseInt(m[3], 10);
+    const effect = m[4].trim().replace(/\.$/, '');
+
+    // "+1*taso havainnointi -taitoon" | "+5 ensiapu -taitoon" | "+1 ketteryys"
+    const e = effect.match(/^([+−-]?\d+)\s*(\*\s*taso)?\s+(.+?)(?:\s*-?taitoon)?$/i);
+    if (!e) return;
+
+    const target = e[3].trim().replace(/\s*-$/, '');
+    const statCode = STAT_NAMES_FI[norm(target)];
+
+    out.push({
+      guildStem: m[1].trim(),
+      level: level,
+      kind: statCode ? 'stat' : 'skill',
+      target: target,
+      stat: statCode || null,
+      amount: asNum(e[1]),
+      perLevel: !!e[2],
+      source: line
+    });
+  });
+  return out;
+}
+
+/* ================= Rules-välilehti =================
+   Kampanjan bonustaulukot. Jokainen lohko tunnistetaan otsikkosolusta, ja
+   sarakkeet otsikkorivin teksteistä — sijainnilla ei ole väliä. Puuttuva lohko
+   jättää CONFIG.rules-oletuksen voimaan. */
+
+function parseRulesGrid(g) {
+  const out = {};
+
+  /* --- Väliaikataulukot ---
+     Otsikkorivillä on "Alkaen" ja "Asti", ja niiden jäljessä yksi tai useampi
+     arvosarake. Sama rivi voi siis sisältää kaikki kolme taulukkoa, tai kukin
+     voi olla omana lohkonaan — molemmat toimivat. */
+  const NAMES = {
+    'stats bonus': 'statBonus', 'stat bonus': 'statBonus', 'ominaisuusbonus': 'statBonus',
+    'dev points': 'devPoints', 'kehityspisteet': 'devPoints',
+    'power points': 'powerPoints', 'voimapisteet': 'powerPoints'
+  };
+
+  for (let r = 0; r < g.length; r++) {
+    const cFrom = findInRow(g, r, 'Alkaen');
+    if (cFrom < 0) continue;
+    const cTo = findInRow(g, r, 'Asti', cFrom);
+    if (cTo < 0) continue;
+
+    // arvosarakkeet: kaikki tunnistetut otsikot tämän rivin oikealla puolella
+    const cols = [];
+    (g[r] || []).forEach((_, c) => {
+      if (c <= cTo) return;
+      const key = NAMES[norm(cellAt(g, r, c))];
+      if (key) cols.push({ col: c, key: key });
+    });
+    if (!cols.length) continue;
+
+    cols.forEach(x => { if (!out[x.key]) out[x.key] = []; });
+    for (let i = r + 1; i < g.length; i++) {
+      const from = cellAt(g, i, cFrom);
+      if (!hasNum(from)) break;
+      const to = hasNum(cellAt(g, i, cTo)) ? asNum(cellAt(g, i, cTo)) : asNum(from);
+      cols.forEach(x => {
+        const v = cellAt(g, i, x.col);
+        if (hasNum(v)) out[x.key].push({ from: asNum(from), to: to, value: asNum(v) });
+      });
+    }
+    cols.forEach(x => { if (!out[x.key].length) delete out[x.key]; });
+  }
+
+  /* --- Taitoluokkien tasobonus ---
+     Otsikkorivillä luokan nimi ja yksi tai useampi bonussarake. Käytetään
+     "Yhteensä"-saraketta jos se on, muuten viimeistä numerosaraketta. */
+  const lv = findLabel(g, 'TAITOLUOKKIEN BONUS') || findLabel(g, 'LEVEL BONUS');
+  if (lv) {
+    let hr = -1, cCat = -1;
+    for (let r = lv.r + 1; r < Math.min(g.length, lv.r + 5); r++) {
+      const c = findInRow(g, r, 'Taitoluokat');
+      const c2 = c >= 0 ? c : findInRow(g, r, 'Kategoria');
+      if (c2 >= 0) { hr = r; cCat = c2; break; }
+    }
+    if (hr >= 0) {
+      let cVal = findInRow(g, hr, 'Yhteensä', cCat);
+      if (cVal < 0) cVal = findInRow(g, hr, 'Kerroin', cCat);
+      if (cVal < 0) {
+        // viimeinen ei-tyhjä otsikkosarake
+        (g[hr] || []).forEach((_, c) => { if (c > cCat && cellAt(g, hr, c)) cVal = c; });
+      }
+      if (cVal >= 0) {
+        const map = {};
+        for (let r = hr + 1; r < g.length; r++) {
+          const cat = cellAt(g, r, cCat);
+          if (!cat) break;
+          map[cat] = asNum(cellAt(g, r, cVal));
+        }
+        if (Object.keys(map).length) out.levelBonus = map;
+      }
+    }
+  }
+
+  /* --- Osumapisteiden tasokerroin (valinnainen): Alkaen/Asti = hahmon taso --- */
+  const hp = findLabel(g, 'HITS') || findLabel(g, 'OSUMAPISTEET');
+  if (hp) {
+    const hr = hp.r + 1;
+    const cFrom = findInRow(g, hr, 'Alkaen', hp.c);
+    const cTo = findInRow(g, hr, 'Asti', hp.c);
+    let cVal = findInRow(g, hr, 'Kerroin', hp.c);
+    if (cVal < 0) cVal = findInRow(g, hr, 'Tasokerroin', hp.c);
+    if (cFrom >= 0 && cVal >= 0) {
+      const rows = [];
+      for (let r = hr + 1; r < g.length; r++) {
+        const from = cellAt(g, r, cFrom);
+        if (!hasNum(from)) break;
+        rows.push({
+          from: asNum(from),
+          to: cTo >= 0 && hasNum(cellAt(g, r, cTo)) ? asNum(cellAt(g, r, cTo)) : asNum(from),
+          value: asNum(cellAt(g, r, cVal))
+        });
+      }
+      if (rows.length) out.hitsPerLevel = rows;
+    }
+  }
+
+  /* --- Kiltabonukset (valinnainen) --- */
+  const gb = findLabel(g, 'GUILD BONUS') || findLabel(g, 'KILTABONUS');
+  if (gb) {
+    const hr = gb.r + 1;
+    const cG = findInRow(g, hr, 'Kilta', gb.c);
+    const cL = findInRow(g, hr, 'Taso', gb.c);
+    const cS = findInRow(g, hr, 'Ominaisuus', gb.c);
+    const cB = findInRow(g, hr, 'Bonus', gb.c);
+    if (cG >= 0 && cS >= 0 && cB >= 0) {
+      const rows = [];
+      for (let r = hr + 1; r < g.length; r++) {
+        const name = cellAt(g, r, cG);
+        if (!name) break;
+        rows.push({
+          guild: name,
+          level: cL >= 0 ? asNum(cellAt(g, r, cL)) : 1,
+          stat: cellAt(g, r, cS),
+          bonus: asNum(cellAt(g, r, cB))
+        });
+      }
+      if (rows.length) out.guildBonus = rows;
+    }
+  }
+
+  return Object.keys(out).length ? out : null;
+}
+
 /* ================= Taitovälilehden jäsennys ================= */
+
+/** Tasoruudukko on lomakkeen raakasyöte: yksi solu per hankittavissa oleva taso.
+      *       hankittu taso
+      numero  tälle tasolle suunnitellut kehityspisteet
+      X       kehityspisteet maksettu aiemmin, taso odottaa opiskelua
+      O       vapaa paikka
+    Ruudukossa on tyhjiä välisarakkeita, jotka ohitetaan: tason numero on solun
+    järjestysluku ei-tyhjien solujen joukossa. */
+function parseRankGrid(g, r, fromCol, toCol) {
+  const out = { slots: 0, ranks: 0, pending: 0, plannedDp: 0, planned: [] };
+  let rank = 0;
+  for (let c = fromCol; c < toCol; c++) {
+    const v = cellAt(g, r, c);
+    if (v === '') continue;                    // välisarake
+    rank++;
+    out.slots = rank;
+    if (v === '*') { out.ranks++; continue; }
+    if (norm(v) === 'x') {
+      out.pending++;
+      out.planned.push({ rank: rank, dp: 0, paidEarlier: true });
+      continue;
+    }
+    if (/^[\d]+([.,][\d]+)?$/.test(v)) {
+      const dp = asNum(v);
+      out.plannedDp += dp;
+      out.planned.push({ rank: rank, dp: dp, paidEarlier: false });
+    }
+  }
+  return out;
+}
 
 function parseSkillsGrid(g) {
   const head = findLabel(g, 'Skill/Capability');
@@ -547,7 +766,11 @@ function parseSkillsGrid(g) {
 
   const cTotal = findInRow(g, sub, 'Total');
   const cClasses = findInRow(g, head.r, 'Classes');
+  const cCost = findInRow(g, head.r, 'Cost');
   const cRanks = findInRow(g, sub, 'Current');
+  // Tasoruudukko on otsikoiden "-- SKILL RANKS --" ja "Levels" välissä.
+  const gridFrom = findInRow(g, head.r, '-- SKILL RANKS --');
+  const gridTo = findInRow(g, head.r, 'Levels');
   const cTarget = findInRow(g, sub, 'Target');
   const cRank = findInRow(g, sub, 'Rank');
   const cStat = findInRow(g, sub, 'Stat');
@@ -585,13 +808,23 @@ function parseSkillsGrid(g) {
     const totalParts = totalRaw.split('/').map(x => x.trim()).filter(Boolean);
     const isCompound = nameParts.length > 1 && nameParts.length === totalParts.length;
 
-    const ranks = asNum(cellAt(g, r, cRanks));
+    const grid = (gridFrom >= 0 && gridTo > gridFrom)
+      ? parseRankGrid(g, r, gridFrom, gridTo) : null;
+    // Tasot ovat raakasyöte: ruudukon tähdet. Current-sarake on niiden summa.
+    const ranks = grid ? grid.ranks : asNum(cellAt(g, r, cRanks));
+
     const skill = {
       id: 'sk-' + slug(name),
       name: name,
       display: skillDisplayName(name),
       category: category,
       ranks: ranks,
+      classes: cellAt(g, r, cClasses),
+      cost: cellAt(g, r, cCost),
+      itemBonus: asNum(cellAt(g, r, cItem)),
+      miscBonus: asNum(cellAt(g, r, cMisc)),
+      grid: grid,
+      sheetTotal: total,        // lomakkeen oma laskenta, käytetään vertailuun
       total: total,
       breakdown: parts.filter(p => p.value !== 0)
     };
@@ -606,6 +839,13 @@ function parseSkillsGrid(g) {
           display: label,
           category: category,
           ranks: ranks,
+          classes: skill.classes,
+          cost: skill.cost,
+          itemBonus: skill.itemBonus,
+          miscBonus: skill.miscBonus,
+          grid: grid,
+          compound: name,      // rivillä on kaksi bonusta, raakasyötteet ovat yhteiset
+          sheetTotal: sub,
           total: sub,
           // Erittely on rivillä yhteinen, joten se näytetään vain jos se täsmää.
           breakdown: parts.reduce((sum, p) => sum + p.value, 0) === sub
