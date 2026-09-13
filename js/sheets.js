@@ -489,6 +489,7 @@ function buildWeapons(g, skills) {
       table: '',
       note: parts.join(' · '),
       fumble: extra.fumbleValue === undefined ? null : extra.fumbleValue,
+      special: extra.special || '',
       kind: directed ? 'directed' : (unarmed ? 'unarmed' : 'melee'),
       canParry: !directed,
       blocks: []

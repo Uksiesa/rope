@@ -189,6 +189,10 @@ const CONFIG = {
     // (aseeton taistelu, suunnatut taiat). Heitto <= arvo on fumble.
     defaultFumble: 5,
 
+    // Kahden käden aseet. Ensisijaisesti tunnistetaan lomakkeen WEAPONS-taulukon
+    // Special-sarakkeesta (teksti "kahden käden"); tämä lista on varalla.
+    twoHandedWeapons: ['Quarterstaff'],
+
     // Taidot joiden Classes-solu ei kerro oikeaa ominaisuutta. Lomakkeessa
     // aseettoman taistelun rivit ovat identtiset, vaikka lyönti käyttää Voimaa
     // ja heitto Ketteryyttä.

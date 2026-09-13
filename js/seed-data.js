@@ -31,7 +31,7 @@ const SEED_CHARACTER = {
           },
           {
               "label": "Muuta",
-              "value": "Killattoman ominaisuusbonus tasolla 2: +1 olemus. \nKameleonttisuden lihan syömisestä +5 bonus esineet -taitoon.\nViihdyttäjäkillan ominaisuusbonus tasolla 1: +1 ketteryys.\nViihdyttäjäkillan tasoetu tasolla 1: +5 pikajuoksu -taitoon\nViihdyttäjäkillan ominaisuustaso tasolla 2: +1 olemus.\nViihdyttäjäkillan tasoetu tasolla 2: +1*taso havainnointi -taitoon.\nTaikurikillan ominaisuusbonus tasolla 1: +1 olemus.\nTaikurikillan tasoetu tasolla 1: +5 ensiapu -taitoon."
+              "value": "Killattoman ominaisuusbonus tasolla 2: +1 olemus. \nKameleonttisuden lihan syömisestä +5 bonus esineet -taitoon.\nViihdyttäjäkillan ominaisuusbonus tasolla 1: +1 ketteryys.\nViihdyttäjäkillan tasoetu tasolla 1: +5 pikajuoksu -taitoon\nViihdyttäjäkillan ominaisuustaso tasolla 2: +1 olemus.\nViihdyttäjäkillan tasoetu tasolla 2: +1*taso havainnointi -taitoon.\nTaikurikillan ominaisuusbonus tasolla 1: +1 olemus.\nTaikurikillan tasoetu tasolla 1: +5 ensiapu -taitoon.\nJoikaus (erityinen laulaminen): +5"
           }
       ]
   },
@@ -86,10 +86,10 @@ const SEED_CHARACTER = {
 
   /* Aseet: OB tulee vastaavasta taidosta. */
   weapons: [
-    {"id":"w-quarterstaff","skillId":"sk-ase-1-quarterstaff","name":"Quarterstaff","ob":89,"table":"","note":"ase +15M","fumble":3,"kind":"melee","canParry":true,"blocks":[]},
-    {"id":"w-aseeton-heitto","skillId":"sk-aseeton-taistelu-heitto","name":"Aseeton — heitto","ob":63,"table":"","note":"","fumble":null,"kind":"unarmed","canParry":true,"blocks":[]},
-    {"id":"w-aseeton-lyönti","skillId":"sk-aseeton-taistelu-lyönti","name":"Aseeton — lyönti","ob":48,"table":"","note":"","fumble":null,"kind":"unarmed","canParry":true,"blocks":[]},
-    {"id":"w-suunnatut-taiat","skillId":"sk-suunnatut-taiat","name":"Suunnatut taiat","ob":43,"table":"","note":"ei parrya","fumble":null,"kind":"directed","canParry":false,"blocks":[]}
+    {"id":"w-quarterstaff","skillId":"sk-ase-1-quarterstaff","name":"Quarterstaff","ob":89,"table":"","note":"ase +15M","fumble":3,"special":"","kind":"melee","canParry":true,"blocks":[]},
+    {"id":"w-aseeton-heitto","skillId":"sk-aseeton-taistelu-heitto","name":"Aseeton — heitto","ob":63,"table":"","note":"","fumble":null,"special":"","kind":"unarmed","canParry":true,"blocks":[]},
+    {"id":"w-aseeton-lyönti","skillId":"sk-aseeton-taistelu-lyönti","name":"Aseeton — lyönti","ob":48,"table":"","note":"","fumble":null,"special":"","kind":"unarmed","canParry":true,"blocks":[]},
+    {"id":"w-suunnatut-taiat","skillId":"sk-suunnatut-taiat","name":"Suunnatut taiat","ob":43,"table":"","note":"ei parrya","fumble":null,"special":"","kind":"directed","canParry":false,"blocks":[]}
   ],
 
   /* Loitsulistat: bonus on listan taitobonus (heittoon lisättävä). */
@@ -284,17 +284,19 @@ const SEED_CHARACTER = {
 
   /* Loitsujen vaikutukset Sheetin Spell bonus -välilehdeltä. */
   spellBonuses: [
-    {"id":"sb-shield-i-2","spell":"Shield I","list":"Attack Avoidance","type":"db","target":"melee+missile","value":25,"scope":"lasting","defaultOn":true,"note":""},
+    {"id":"sb-shield-i-2","spell":"Shield I","list":"Attack Avoidance","type":"db","target":"melee+missile","value":25,"scope":"lasting","defaultOn":true,"note":"kahden käden aseella maksaa *2"},
     {"id":"sb-bladeturn-i-3","spell":"Bladeturn I","list":"Attack Avoidance","type":"db","target":"melee","value":100,"scope":"once","defaultOn":true,"note":""},
     {"id":"sb-deflect-i-4","spell":"Deflect I","list":"Attack Avoidance","type":"db","target":"missile","value":100,"scope":"once","defaultOn":true,"note":""},
     {"id":"sb-turn-missile-5","spell":"Turn missile","list":"Attack Avoidance","type":"db","target":"missile","value":20,"scope":"once","defaultOn":true,"note":""},
-    {"id":"sb-turn-blade-6","spell":"Turn blade","list":"Attack Avoidance","type":"db","target":"melee","value":50,"scope":"lasting","defaultOn":true,"note":""},
+    {"id":"sb-turn-blade-6","spell":"Turn blade","list":"Attack Avoidance","type":"db","target":"melee","value":20,"scope":"lasting","defaultOn":true,"note":""},
     {"id":"sb-blur-7","spell":"Blur","list":"Cloaking","type":"db","target":"kaikki","value":10,"scope":"lasting","defaultOn":true,"note":""},
     {"id":"sb-shadow-8","spell":"Shadow","list":"Cloaking","type":"skill","target":"hiivi","value":25,"scope":"lasting","defaultOn":true,"note":""},
     {"id":"sb-shadow-9","spell":"Shadow","list":"Cloaking","type":"skill","target":"piileskele","value":75,"scope":"lasting","defaultOn":true,"note":""},
-    {"id":"sb-sly-ears-10","spell":"Sly ears","list":"Sense Mastery","type":"skill","target":"havainnointi","value":50,"scope":"lasting","defaultOn":true,"note":"vain kuulo"},
-    {"id":"sb-sly-ears-11","spell":"Sly ears","list":"Sense Mastery","type":"skill","target":"havainnointi","value":0,"scope":"lasting","defaultOn":false,"note":"muut aistit paitsi kuulo"},
-    {"id":"sb-shock-bolt-12","spell":"Shock Bolt","list":"Light Molding","type":"attack","target":"","value":0,"scope":"once","defaultOn":true,"note":"suunnattu taika"}
+    {"id":"sb-quiet-i-10","spell":"Quiet I","list":"Sound Control","type":"skill","target":"hiivi","value":25,"scope":"lasting","defaultOn":true,"note":""},
+    {"id":"sb-silence-i-11","spell":"Silence I","list":"Sound Control","type":"skill","target":"hiivi","value":25,"scope":"lasting","defaultOn":true,"note":""},
+    {"id":"sb-sly-ears-12","spell":"Sly ears","list":"Sense Mastery","type":"skill","target":"havainnointi","value":50,"scope":"lasting","defaultOn":true,"note":"vain kuulo"},
+    {"id":"sb-sly-ears-13","spell":"Sly ears","list":"Sense Mastery","type":"skill","target":"havainnointi","value":25,"scope":"lasting","defaultOn":false,"note":"kuulo yhdistettynä muihin aisteihin"},
+    {"id":"sb-shock-bolt-14","spell":"Shock Bolt","list":"Light Molding","type":"attack","target":"","value":0,"scope":"once","defaultOn":true,"note":"suunnattu taika"}
   ],
 
   /* Bonustaulukot Sheetin Rules-välilehdeltä. */

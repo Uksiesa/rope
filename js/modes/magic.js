@@ -52,6 +52,12 @@ const Magic = {
 
   spells() { return (Store.character && Store.character.spells) || []; },
 
+  /** Loitsun todellinen hinta nykyisellä aseella (Taistelu-välilehden valinta). */
+  costOf(sp) {
+    const weapon = (typeof Battle !== 'undefined' && Store.character) ? Battle.state().weapon : null;
+    return Rules.spellCost(Store.character, sp, weapon);
+  },
+
   /** Listan taitobonus ja tasot Magia-taidoista. */
   listInfo(name) {
     const lists = (Store.character && Store.character.spellLists) || [];
@@ -72,8 +78,9 @@ const Magic = {
       toast(sp.list + ' -listan taso ei vielä riitä tähän loitsuun.');
       return;
     }
-    if (Store.session.ppCur < sp.pp) {
-      toast('Voimapisteet eivät riitä (' + Store.session.ppCur + ' / ' + sp.pp + ').');
+    const cost = this.costOf(sp);
+    if (Store.session.ppCur < cost.pp) {
+      toast('Voimapisteet eivät riitä (' + Store.session.ppCur + ' / ' + cost.pp + ').');
       return;
     }
     // Ilman ajastinta uudelleenloitsiminen ei tuo mitään, joten vahinkoklikkaus
@@ -84,13 +91,15 @@ const Magic = {
       return;
     }
     haptic();
-    Store.update(s => { s.ppCur = clamp(s.ppCur - sp.pp, 0, Store.character.vitals.ppMax); });
+    Store.update(s => { s.ppCur = clamp(s.ppCur - cost.pp, 0, Store.character.vitals.ppMax); });
 
     // Kestovaikutteinen loitsu jää seurattavaksi, kunnes pelaaja poistaa sen.
     const lasting = Rules.spellHasEffect(Store.character, sp.name);
     if (lasting) this.activate(sp.name);
 
-    toast(sp.name + ' loitsittu — ' + sp.pp + ' pp, jäljellä ' + Store.session.ppCur +
+    toast(sp.name + ' loitsittu — ' + cost.pp + ' pp' +
+          (cost.multiplier > 1 ? ' (' + cost.reason + ')' : '') +
+          ', jäljellä ' + Store.session.ppCur +
           (lasting ? '. Lisätty aktiivisiin.' : '.'));
   },
 
@@ -168,7 +177,7 @@ const Magic = {
       (ratio <= CONFIG.magic.ppDanger ? ' danger' : ratio <= CONFIG.magic.ppWarn ? ' warn' : '');
 
     const usable = this.spells().filter(sp => sp.known);
-    const affordable = usable.filter(sp => sp.pp <= cur).length;
+    const affordable = usable.filter(sp => this.costOf(sp).pp <= cur).length;
     $('#ppNote').textContent = max === 0
       ? 'Hahmolla ei ole voimapisteitä.'
       : cur === 0 ? 'Voimapisteet lopussa — ei loitsuja.'
@@ -190,11 +199,15 @@ const Magic = {
 
     $('#spellName').textContent = sp.name;
     $('#spellMeta').textContent = [sp.list, 'listan taso ' + sp.level].filter(Boolean).join(' · ');
-    $('#spellCost').textContent = sp.pp + ' pp';
+    const cost = this.costOf(sp);
+    $('#spellCost').textContent = cost.pp + ' pp';
 
     const kv = $('#spellDetails');
     kv.innerHTML = '';
     const rows = [];
+    if (cost.multiplier > 1) {
+      rows.push(['Hinta', cost.base + ' pp × ' + cost.multiplier + ' — ' + cost.reason]);
+    }
     if (info) {
       rows.push(['Listan bonus', signed(info.bonus)]);
       rows.push(['Osattu listasta', info.ranks + ' tasoa']);
@@ -209,10 +222,10 @@ const Magic = {
         (info ? info.ranks : '?') + ' tasoa, tämä loitsu on tasolla ' + sp.level + '.';
 
     const btn = $('#btnCast');
-    const enough = Store.session.ppCur >= sp.pp;
+    const enough = Store.session.ppCur >= cost.pp;
     btn.disabled = !enough || !sp.known;
     btn.textContent = !sp.known ? 'Listan taso ei riitä'
-      : enough ? 'Loitsi (−' + sp.pp + ' pp)' : 'Ei tarpeeksi voimapisteitä';
+      : enough ? 'Loitsi (−' + cost.pp + ' pp)' : 'Ei tarpeeksi voimapisteitä';
   },
 
   renderList() {
@@ -258,7 +271,7 @@ const Magic = {
         el('ul', { class: 'skillgroup-body spell-body' }, items.map(sp =>
           el('li', {
             class: 'spell-row' + (Store.session.spellId === sp.id ? ' active' : '') +
-                   (!sp.known ? ' locked' : (sp.pp > cur ? ' unaffordable' : '')),
+                   (!sp.known ? ' locked' : (this.costOf(sp).pp > cur ? ' unaffordable' : '')),
             'data-spell': sp.id
           }, [
             el('span', { class: 'spell-level', text: String(sp.level) }),
@@ -268,7 +281,7 @@ const Magic = {
                 ? [sp.duration, sp.range].filter(Boolean).join(' · ')
                 : 'ei vielä osattavissa' })
             ]),
-            el('b', { class: 'spell-pp', text: sp.known ? sp.pp + ' pp' : '🔒' })
+            el('b', { class: 'spell-pp', text: sp.known ? this.costOf(sp).pp + ' pp' : '🔒' })
           ])
         ))
       ]));

@@ -217,6 +217,32 @@ const Rules = {
       });
   },
 
+  /** Onko ase kahden käden ase? Lomakkeen Special-sarake ensin, sitten configin lista. */
+  isTwoHanded(weapon) {
+    if (!weapon || weapon.kind === 'spell') return false;
+    if (/kahden\s*käden|two[\s-]*hand/i.test(weapon.special || '')) return true;
+    const list = this.t().twoHandedWeapons || [];
+    return list.some(n => norm(n) === norm(weapon.name));
+  },
+
+  /** Loitsun todellinen hinta. Loitsuvälilehden Huomio voi sisältää ehdon
+      "kahden käden aseella maksaa *2", joka kertoo hinnan kun kahden käden ase
+      on käytössä (Taistelu-välilehdellä valittu ase). */
+  spellCost(character, spell, weapon) {
+    const base = spell ? spell.pp : 0;
+    const out = { pp: base, base: base, multiplier: 1, reason: '' };
+    if (!spell) return out;
+    this.spellBonusRows(character, spell.name).forEach(b => {
+      const m = String(b.note || '').match(/kahden\s*käden\s*aseella\s*maksaa\s*[*×x]\s*(\d+)/i);
+      if (m && this.isTwoHanded(weapon)) {
+        out.multiplier = Math.max(out.multiplier, parseInt(m[1], 10));
+        out.reason = 'kahden käden ase: ' + weapon.name;
+      }
+    });
+    out.pp = base * out.multiplier;
+    return out;
+  },
+
   /** Aseen fumble-arvo: lomakkeen WEAPONS-taulukko ensin, muuten configin oletus.
       Heitto <= tämä on fumble. */
   fumbleFor(weapon) {

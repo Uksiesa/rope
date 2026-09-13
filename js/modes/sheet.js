@@ -207,7 +207,8 @@ const SheetView = {
       gl.appendChild(el('li', { class: 'gear' }, [
         el('div', { class: 'gear-main' }, [
           el('span', { class: 'gear-name', text: w.name }),
-          el('span', { class: 'gear-note', text: [w.table, w.note, fumbleText].filter(Boolean).join(' · ') })
+          el('span', { class: 'gear-note', text: [w.table, w.note,
+            Rules.isTwoHanded(w) ? 'kahden käden' : '', fumbleText].filter(Boolean).join(' · ') })
         ]),
         el('b', { class: 'gear-val', text: 'OB ' + w.ob })
       ]));

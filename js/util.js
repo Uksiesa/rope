@@ -29,6 +29,55 @@ function signed(n) {
 /** Numero näytölle: typografinen miinus, ei ASCII-viiva. */
 function fmtNum(n) { return String(n).replace('-', '−'); }
 
+/* ---------- Negatiivinen modi ----------
+   iPhonen numeronäppäimistössä ei ole miinusmerkkiä, joten modikentän vieressä on
+   etumerkkinappi. Kenttä näyttää luvun itseisarvona ja nappi etumerkin; napin voi
+   painaa ennen tai jälkeen luvun kirjoittamisen. */
+
+/** Modikentän arvo etumerkkeineen. */
+function modValue(input) {
+  const v = numOf(input, 0);
+  return input && input.dataset.neg === '1' ? -Math.abs(v) : v;
+}
+
+/** Päivittää napin ulkoasun kentän etumerkin mukaan. */
+function syncSignButton(button, input) {
+  const neg = input.dataset.neg === '1';
+  button.textContent = neg ? '−' : '+';
+  button.classList.toggle('negative', neg);
+  button.setAttribute('aria-label', neg ? 'Modi negatiivinen' : 'Modi positiivinen');
+}
+
+/** Kytkee etumerkkinapin kenttään. onChange kutsutaan aina muutoksen jälkeen. */
+function bindSignToggle(button, input, onChange) {
+  syncSignButton(button, input);
+  button.addEventListener('click', () => {
+    const typed = numOf(input, null);
+    const neg = input.dataset.neg === '1';
+    input.dataset.neg = neg ? '0' : '1';
+    if (Number.isFinite(typed)) input.value = String(Math.abs(typed));
+    syncSignButton(button, input);
+    haptic();
+    if (onChange) onChange();
+  });
+  // Työpöydällä voi kirjoittaa miinuksen suoraan: siirretään se napin tilaan.
+  input.addEventListener('input', () => {
+    const typed = numOf(input, null);
+    if (Number.isFinite(typed) && typed < 0) {
+      input.dataset.neg = '1';
+      input.value = String(Math.abs(typed));
+      syncSignButton(button, input);
+    }
+  });
+}
+
+/** Tyhjentää kentän ja palauttaa etumerkin positiiviseksi. */
+function resetSign(button, input) {
+  input.value = '';
+  input.dataset.neg = '0';
+  syncSignButton(button, input);
+}
+
 /** Numeerinen kenttä turvallisesti luvuksi. */
 function numOf(input, fallback) {
   const v = parseInt(String(input && input.value !== undefined ? input.value : input).trim(), 10);

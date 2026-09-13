@@ -45,6 +45,25 @@ Taidon nimen täsmäys on sumea, joten `havainnointi` löytää rivin `Havannoin
 `hiipiminen` **ei** löydä taitoa `Hiivi`. Jos kohde jää osumatta, Hahmo-välilehden
 Bonuslaskenta-kortti kertoo siitä punaisella, eikä bonus jää hiljaa vaikuttamatta.
 
+## Ehdollinen hinta
+
+Huomio-sarakkeeseen voi kirjoittaa hinnan kertoimen, joka pätee kun kahden käden
+ase on käytössä:
+
+```
+Shield I  Attack Avoidance  DB  melee+missile  25  kesto  kyllä  kahden käden aseella maksaa *2
+```
+
+"Käytössä oleva ase" on Taistelu-välilehdellä valittu ase. Quarterstaff valittuna
+Shield I maksaa 6 pp (3 × 2), aseettomana 3 pp. Todellinen hinta näkyy Taika-
+välilehden listassa ja loitsun kortissa, jossa on myös rivi *"Hinta 3 pp × 2 —
+kahden käden ase: Quarterstaff"*. Sama hinta veloitetaan loitsittaessa.
+
+Kahden käden ase tunnistetaan lomakkeen `WEAPONS`-taulukon `Special`-sarakkeesta
+(teksti `kahden käden`). Koska Quarterstaffin Special-solu on nyt tyhjä, käytössä on
+varalista `js/config.js` → `CONFIG.rules.twoHandedWeapons`, jossa on Quarterstaff.
+Hahmolomakkeen aselistassa kahden käden aseella on merkintä "kahden käden".
+
 ## Aktiiviset loitsut
 
 Taika-välilehden ylin kortti. Kun loitsit loitsun, jolla on vaikutusrivejä, se

@@ -24,6 +24,11 @@ merkityn kehityspistesuunnitelman, näyttää bonukset ennen ja jälkeen, ja
 | **Taistelu** | Osumapisteet, taistelukierrokset ja tilavaikutukset (tainnutus laskee alas, verenvuoto vähentää hp:tä kierroksen lopussa), aseen OB jaettuna hyökkäykseen ja parryyn, DB:n komponentit togglattavina, heittolaskuri |
 | **Taika** | Voimapisteet, **aktiiviset loitsut** ja loitsut taikalistoittain ryhmiteltynä. Loitsiminen vähentää pisteet ja kestovaikutteinen loitsu jää aktiivisten listalle, jolloin sen bonus lasketaan mukaan Taistelu- ja Teot-näkymissä |
 
+**Negatiivinen modi**: modikentän vieressä on etumerkkinappi (+/−), koska iPhonen
+numeronäppäimistössä ei ole miinusmerkkiä. Napin voi painaa ennen tai jälkeen luvun
+kirjoittamisen, ja punainen − tarkoittaa että modi vähennetään (esim. haavojen
+aiheuttama toimintakyvyn heikkeneminen).
+
 **Avoin heitto**: kun heität 96+ tai 05−, heittokentän alle ilmestyy korostettu
 "+ avoin heitto" -nappi. Se siirtää heiton ketjuun ja tyhjentää kentän seuraavaa
 varten; appi laskee suunnan (korkea lisätään, matala vähennetään) ja näyttää

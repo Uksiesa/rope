@@ -105,6 +105,7 @@ const Battle = {
     });
 
     ['#battleRoll', '#battleMod'].forEach(sel => $(sel).addEventListener('input', () => this.renderRoll()));
+    bindSignToggle($('#battleModSign'), $('#battleMod'), () => this.renderRoll());
     $('#rollTarget').addEventListener('change', () => this.renderRoll());
     $('#btnCastAttack').addEventListener('click', () => this.castAttack());
 
@@ -122,7 +123,7 @@ const Battle = {
     $('#battleClear').addEventListener('click', () => {
       this.chain = [];
       $('#battleRoll').value = '';
-      $('#battleMod').value = '';
+      resetSign($('#battleModSign'), $('#battleMod'));
       this.renderRoll();
       $('#battleRoll').focus();
     });
@@ -136,15 +137,16 @@ const Battle = {
     if (!st.isSpell) return;
     const sp = st.weapon.spell;
     const s = Store.session;
-    if (s.ppCur < sp.pp) { toast('Voimapisteet eivät riitä.'); return; }
+    const cost = Rules.spellCost(Store.character, sp, st.weapon);
+    if (s.ppCur < cost.pp) { toast('Voimapisteet eivät riitä.'); return; }
 
     haptic();
     Store.update(x => {
-      x.ppCur = clamp(x.ppCur - sp.pp, 0, Store.character.vitals.ppMax);
+      x.ppCur = clamp(x.ppCur - cost.pp, 0, Store.character.vitals.ppMax);
     });
-    this.lastCast = 'Loitsittu kierroksella ' + s.round + ' · −' + sp.pp + ' pp · jäljellä ' + s.ppCur;
+    this.lastCast = 'Loitsittu kierroksella ' + s.round + ' · −' + cost.pp + ' pp · jäljellä ' + s.ppCur;
     this.render();
-    toast(sp.name + ' loitsittu — ' + sp.pp + ' pp, jäljellä ' + s.ppCur + '.');
+    toast(sp.name + ' loitsittu — ' + cost.pp + ' pp, jäljellä ' + s.ppCur + '.');
   },
 
   /* ---------------- Tilavaikutukset ---------------- */
@@ -401,7 +403,7 @@ const Battle = {
 
     const pending = numOf($('#battleRoll'), null);
     const rolls = this.chain.concat(Number.isFinite(pending) ? [pending] : []);
-    const mod = numOf($('#battleMod'), 0);
+    const mod = modValue($('#battleMod'));
     const out = $('#battleTotal').querySelector('b');
     const formula = $('#battleFormula');
 

@@ -35,6 +35,7 @@ const Action = {
 
     ['#actionRoll', '#actionMod'].forEach(sel =>
       $(sel).addEventListener('input', () => this.renderTotal()));
+    bindSignToggle($('#actionModSign'), $('#actionMod'), () => this.renderTotal());
 
     $('#spellChips').addEventListener('click', e => {
       const b = e.target.closest('button[data-spellkey]');
@@ -94,7 +95,7 @@ const Action = {
     Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, sk)
       .forEach(b => { if (!b.defaultOn) this.spellOff[b.key] = true; });
     $('#actionRoll').value = '';
-    $('#actionMod').value = '';
+    resetSign($('#actionModSign'), $('#actionMod'));
     this.renderSelected();
     $('#selectedCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     setTimeout(() => $('#actionRoll').focus({ preventScroll: true }), 250);
@@ -206,7 +207,7 @@ const Action = {
     if (!s) return;
     const pending = numOf($('#actionRoll'), null);
     const rolls = this.chain.concat(Number.isFinite(pending) ? [pending] : []);
-    const mod = numOf($('#actionMod'), 0);
+    const mod = modValue($('#actionMod'));
     const spellSum = Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, s)
       .filter(b => !this.spellOff[b.key])
       .reduce((sum, b) => sum + b.value, 0);
