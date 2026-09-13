@@ -39,28 +39,28 @@ const CONFIG = {
   calendar: {
     // Kuukaudet: nimi + päivien määrä. Vaihda vapaasti — myös määrä saa muuttua.
     months: [
-      { name: 'Jäätalvi',    days: 30 },
-      { name: 'Suvenodotus', days: 30 },
-      { name: 'Kylvökuu',    days: 30 },
-      { name: 'Lehtikuu',    days: 30 },
-      { name: 'Kukkakuu',    days: 30 },
-      { name: 'Aurinkokuu',  days: 30 },
-      { name: 'Heinäkuu',    days: 30 },
-      { name: 'Elokuu',      days: 30 },
-      { name: 'Sadonkorjuu', days: 30 },
-      { name: 'Ruskakuu',    days: 30 },
-      { name: 'Sumukuu',     days: 30 },
-      { name: 'Pimeäkuu',    days: 30 }
+      { name: 'Tammikuu',     days: 31 },
+      { name: 'Helmikuu',     days: 28 },
+      { name: 'Maaliskuu',    days: 31 },
+      { name: 'Huhtikuu',     days: 30 },
+      { name: 'Toukokuu',     days: 31 },
+      { name: 'Kesäkuu',      days: 30 },
+      { name: 'Heinäkuu',     days: 31 },
+      { name: 'Elokuu',       days: 31 },
+      { name: 'Syyskuu',      days: 30 },
+      { name: 'Lokakuu',      days: 31 },
+      { name: 'Marraskuu',    days: 30 },
+      { name: 'Joulukuu',     days: 31 }
     ],
     // Kampanjan aloituspäivä. monthIndex 0 = ensimmäinen kuukausi yllä.
-    start: { year: 4761, monthIndex: 2, day: 14 },
+    start: { year: 4761, monthIndex: 9, day: 26 },
     yearSuffix: 'Uuden ajan vuosi'
   },
 
   /* ---------- Kuun kierto ---------- */
   moon: {
     cycleDays: 28,   // kierron pituus päivinä
-    startPhase: 6,   // monesko päivä kierrossa kampanjan aloituspäivänä (0 = uusikuu)
+    startPhase: 23,   // monesko päivä kierrossa kampanjan aloituspäivänä (0 = uusikuu)
     phases: [
       { name: 'Uusikuu',              at: 0.000 },
       { name: 'Kasvava sirppi',       at: 0.125 },
@@ -75,7 +75,7 @@ const CONFIG = {
 
   /* ---------- Muona ---------- */
   food: {
-    startUnits: 24,
+    startUnits: 14,
     barMax: 40,        // täysi palkki tällä määrällä
     lowWarning: 6      // varoitus tämän alle
   },
