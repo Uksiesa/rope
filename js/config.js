@@ -53,7 +53,7 @@ const CONFIG = {
       { name: 'Joulukuu',     days: 31 }
     ],
     // Kampanjan aloituspäivä. monthIndex 0 = ensimmäinen kuukausi yllä.
-    start: { year: 4761, monthIndex: 9, day: 26 },
+    start: { year: 4761, monthIndex: 8, day: 26 },   // 8 = Syyskuu
     yearSuffix: 'Uuden ajan vuosi'
   },
 
