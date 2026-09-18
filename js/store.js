@@ -96,7 +96,7 @@ const Store = {
     const money = {};
     CONFIG.coins.forEach(c => { money[c.key] = 0; });
     return {
-      day: 0,               // kuluneita matkapäiviä aloituspäivästä
+      day: CONFIG.calendar.startTravelDay || 0,   // matkapäivälaskuri, ks. CONFIG.calendar
       food: CONFIG.food.startUnits,
       money: money,
       moneyInit: false,
@@ -123,6 +123,13 @@ const Store = {
     this.durable.langRanks = d.langRanks || {};
     this.durable.log = Array.isArray(d.log) ? d.log : [];
     this.durable.itemLocations = d.itemLocations || {};
+
+    // Vanha tallennus voi olla laskurin lähtöarvoa pienempi (ennen kuin
+    // startTravelDay oli olemassa). Sitä pienempi matkapäivä ei ole mahdollinen.
+    const firstDay = CONFIG.calendar.startTravelDay || 0;
+    if (!Number.isFinite(this.durable.day) || this.durable.day < firstDay) {
+      this.durable.day = firstDay;
+    }
   },
 
   saveSession() { writeJson(STORAGE.session, this.session); },

@@ -4,7 +4,11 @@
 /* ---------- Kalenteri ---------- */
 
 const Calendar = {
-  /** Päiväindeksi (0 = kampanjan aloituspäivä) -> { year, monthIndex, month, day } */
+  /** Matkapäivä -> kuluneita päiviä aloituspäivästä. Laskuri alkaa ykkösestä:
+      matkapäivä 1 on kampanjan aloituspäivä. */
+  elapsed(day) { return day - 1; },
+
+  /** Matkapäivä -> { year, monthIndex, month, day } */
   fromIndex(index) {
     const months = CONFIG.calendar.months;
     const yearLength = months.reduce((s, m) => s + m.days, 0);
@@ -13,7 +17,7 @@ const Calendar = {
     let dayOfYear = start.day - 1;
     for (let i = 0; i < start.monthIndex; i++) dayOfYear += months[i].days;
 
-    const total = dayOfYear + index;
+    const total = dayOfYear + this.elapsed(index);
     const year = start.year + Math.floor(total / yearLength);
     let rest = ((total % yearLength) + yearLength) % yearLength;
 
@@ -38,7 +42,7 @@ const Calendar = {
 const Moon = {
   fraction(index) {
     const c = CONFIG.moon;
-    const pos = (((c.startPhase + index) % c.cycleDays) + c.cycleDays) % c.cycleDays;
+    const pos = (((c.startPhase + Calendar.elapsed(index)) % c.cycleDays) + c.cycleDays) % c.cycleDays;
     return pos / c.cycleDays;
   },
 
@@ -176,7 +180,7 @@ const Adventure = {
     });
 
     $('#dayBack').addEventListener('click', () => {
-      if (Store.durable.day <= 0) return;
+      if (Store.durable.day <= (CONFIG.calendar.startTravelDay || 0)) return;
       haptic();
       Store.updateDurable(d => {
         const abandoned = d.log.find(x => x.day === d.day);

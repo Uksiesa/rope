@@ -52,15 +52,22 @@ const CONFIG = {
       { name: 'Marraskuu',    days: 30 },
       { name: 'Joulukuu',     days: 31 }
     ],
-    // Kampanjan aloituspäivä. monthIndex 0 = ensimmäinen kuukausi yllä.
-    start: { year: 4761, monthIndex: 8, day: 26 },   // 8 = Syyskuu
+    // Kampanjan aloituspäivä = matkapäivä 1. monthIndex 0 = ensimmäinen kuukausi yllä.
+    start: { year: 1, monthIndex: 3, day: 1 },   // 3 = Huhtikuu
+
+    // Matkapäivälaskurin lähtöarvo appia käyttöön otettaessa. Matkaa oli jo
+    // takana, joten laskuri alkaa tästä: matkapäivä 179 = 26. Syyskuuta.
+    startTravelDay: 179,
+
     yearSuffix: 'Uuden ajan vuosi'
   },
 
   /* ---------- Kuun kierto ---------- */
   moon: {
     cycleDays: 28,   // kierron pituus päivinä
-    startPhase: 23,   // monesko päivä kierrossa kampanjan aloituspäivänä (0 = uusikuu)
+    // Monesko päivä kierrossa kampanjan aloituspäivänä (0 = uusikuu, 14 = täysikuu).
+    // Johdettu havainnosta: täysikuu oli 28. Toukokuuta, joka on matkapäivä 58.
+    startPhase: 13,
     phases: [
       { name: 'Uusikuu',              at: 0.000 },
       { name: 'Kasvava sirppi',       at: 0.125 },

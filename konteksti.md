@@ -41,6 +41,11 @@ eivät ole käytössä sillä aseella (kilpi jousta käytettäessä).
 ja kuun kierron pituus ovat `js/config.js`:ssä; oikea gregoriaaninen kalenteri
 saadaan vaihtamalla kuukausitaulukko.
 
+Matkapäivä 1 on kampanjan aloituspäivä, ei nolla. Laskuri ei myöskään ala alusta,
+koska matkaa oli takana jo ennen appin käyttöönottoa: `calendar.startTravelDay` on
+se päivä, josta seuranta alkaa. Kuun `startPhase` on aloituspäivän kohta kierrossa,
+ja se johdetaan havaitusta täysikuusta laskemalla taaksepäin.
+
 **Rahat: neljä tasoa, 1:10 -suhde.** Kulta → hopea → pronssi → kupari. Kaikki
 laskenta tehdään alimman yksikön kokonaislukuina, jolloin pyöristysvirheitä ei tule.
 "Vaihda ylöspäin" normalisoi kolikot ja "Maksa" vähentää summan ja antaa vaihtorahat.
