@@ -10,6 +10,10 @@ aloitus saa hukata kerättyjä kielitunteja tai rahoja.
 | **Session data** | osuma- ja voimapisteet, taistelukierros, tilavaikutukset, DB-togglet, asevalinta | localStorage, `tm.session.v2` | Yksi peli-ilta. "Aloita uusi sessio" nollaa |
 | **Kertyvä data** | matkapäivät, kalenteri, muona, rahat, kielten opiskelutunnit ja tuntitavoitteet, päiväkirja, varusteet ja kantopaikat | localStorage, `tm.durable.v2` | Säilyy sessioiden yli. **Tämä viedään Sheetiin** |
 
+Varusteiden nimet tulevat tiedostosta `js/inventory-data.js`, koska niitä ei ole
+hahmolomakkeella. Vain kantopaikka on kertyvää dataa: tiedoston `location` on
+oletus, jonka appissa tehty valinta korvaa pysyvästi.
+
 Session data on tarkoituksella katoavaa: osumapisteet palautuvat pelin sisäisen
 levon myötä eikä niitä ole mielekästä kirjata ylös. Kertyvä data taas kuvaa
 kampanjan tilaa, ja se pitää saada talteen.

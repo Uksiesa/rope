@@ -75,6 +75,7 @@ näyttää vanhaa koodia.
 | Kalenterin kuukaudet, aloituspäivä, kuunkierron pituus | `js/config.js` → `calendar`, `moon` |
 | Kolikkotyypit ja vaihtokurssi | `js/config.js` → `coins`, `coinRatio` |
 | Muonan lähtömäärä ja varoitusraja | `js/config.js` → `food` |
+| Varustelista | `js/inventory-data.js`; kantopaikat vaihdetaan appissa |
 | Kielten tuntitavoitteet | appissa, Matka-välilehden "Tavoite"-nappi |
 | Avoimen heiton rajat | `js/config.js` → `openEnded` |
 | Bonustaulukot | Sheetin `Rules`-välilehti, oletukset `js/config.js` → `rules` |

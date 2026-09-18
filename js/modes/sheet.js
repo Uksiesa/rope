@@ -353,6 +353,16 @@ const SheetView = {
     box.innerHTML = '';
 
     const locOf = i => d.itemLocations[i.id] !== undefined ? d.itemLocations[i.id] : (i.location || 'Muu');
+    const weightOf = i => (i.weight || 0) * (i.qty || 1);
+    // Varustelistassa ei ole painoja eikä kaikilla hintoja, joten tyhjät jätetään
+    // näyttämättä sen sijaan että rivi täyttyisi nollista. Hinta on pronssia,
+    // ja murto-osat näytetään kolikkoina: 2,2 pronssia = 2 pp 2 kup.
+    const bronze = CONFIG.coins.findIndex(c => c.key === 'bronze') >= 0
+      ? Money.unitOf('bronze') : 1;
+    const priceText = i => i.price
+      ? 'hinta ' + Money.formatBase(Math.round(i.price * bronze))
+      : '';
+    const weightText = i => weightOf(i) ? weightOf(i).toFixed(1) + ' kg' : '';
 
     // Ryhmien järjestys: configin mukaiset ensin, sitten omat lisäykset.
     const groups = [];
@@ -362,13 +372,14 @@ const SheetView = {
     let total = 0;
     groups.forEach(slot => {
       const items = c.inventory.filter(i => locOf(i) === slot);
-      const slotWeight = items.reduce((sum, i) => sum + (i.weight || 0) * (i.qty || 1), 0);
+      const slotWeight = items.reduce((sum, i) => sum + weightOf(i), 0);
       total += slotWeight;
 
       box.appendChild(el('div', { class: 'inv-group' }, [
         el('div', { class: 'inv-group-head' }, [
           el('span', { class: 'ig-name', text: slot || 'Määrittelemätön' }),
-          el('span', { class: 'ig-weight', text: slotWeight.toFixed(1) + ' kg' })
+          el('span', { class: 'ig-weight',
+            text: slotWeight ? slotWeight.toFixed(1) + ' kg' : items.length + ' kpl' })
         ]),
         el('ul', { class: 'inv-list' }, items.map(i => {
           const cur = locOf(i);
@@ -382,7 +393,8 @@ const SheetView = {
             el('span', { class: 'inv-qty', text: (i.qty > 1 ? i.qty + '×' : '') }),
             el('div', { class: 'inv-main' }, [
               el('span', { class: 'inv-name', text: i.name }),
-              el('span', { class: 'inv-note', text: [i.note, ((i.weight || 0) * (i.qty || 1)).toFixed(1) + ' kg'].filter(Boolean).join(' · ') })
+              el('span', { class: 'inv-note',
+                text: [i.note, priceText(i), weightText(i)].filter(Boolean).join(' · ') })
             ]),
             select
           ]);
@@ -390,6 +402,8 @@ const SheetView = {
       ]));
     });
 
-    $('#invWeight').textContent = total.toFixed(1) + ' kg';
+    $('#invWeight').textContent = total
+      ? total.toFixed(1) + ' kg'
+      : c.inventory.length + ' esinettä';
   }
 };

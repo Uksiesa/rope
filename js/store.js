@@ -49,6 +49,11 @@ const Store = {
     });
     if (!data.vitals) data.vitals = { hitsMax: 0, ppMax: 0 };
     if (!data.money) data.money = {};
+
+    // Varusteet eivät ole lomakkeella, vaan tiedostossa js/inventory-data.js.
+    if (!data.inventory.length && typeof INVENTORY_DATA !== 'undefined') {
+      data.inventory = INVENTORY_DATA.map(i => Object.assign({}, i));
+    }
     this.raw = data;
     Rules.use(data.rules || null);
     this.character = Rules.compute(data, this.durable && this.durable.levelUp);
