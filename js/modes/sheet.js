@@ -26,6 +26,52 @@ const SheetView = {
       haptic();
     });
 
+    /* --- Kappalemäärä ja poisto --- */
+    $('#invGroups').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-qty], button[data-del]');
+      if (!btn) return;
+      const id = btn.dataset.item;
+
+      if (btn.dataset.del) {
+        const item = Store.inventory().find(i => i.id === id);
+        if (!item || !confirm('Poistetaanko ' + item.name + ' varusteista?')) return;
+        haptic();
+        Store.updateDurable(d => {
+          if (item.custom) {
+            // Lisätty esine katoaa kokonaan, joten sen jäljet siivotaan — muuten
+            // sama id voisi tulla uudelleen käyttöön vanha kpl-määrä mukanaan.
+            d.itemsCustom = d.itemsCustom.filter(i => i.id !== id);
+            delete d.itemQty[id];
+            delete d.itemLocations[id];
+          } else if (d.itemsRemoved.indexOf(id) < 0) {
+            // Pohjalistan esine vain piilotetaan, jotta sen voi palauttaa.
+            d.itemsRemoved.push(id);
+          }
+        });
+        toast(item.name + ' poistettu.');
+        return;
+      }
+
+      haptic();
+      const step = parseInt(btn.dataset.qty, 10);
+      Store.updateDurable(d => {
+        const item = Store.inventory().find(i => i.id === id);
+        d.itemQty[id] = Math.max(0, (item ? item.qty : 1) + step);
+      });
+    });
+
+    /* --- Uusi varuste --- */
+    $('#btnAddItemOpen').addEventListener('click', () => { haptic(); this.toggleItemForm(true); });
+    $('#btnAddItemCancel').addEventListener('click', () => this.toggleItemForm(false));
+    $('#btnAddItem').addEventListener('click', () => this.addItem());
+    $('#newItemName').addEventListener('keydown', e => { if (e.key === 'Enter') this.addItem(); });
+
+    $('#btnRestoreItems').addEventListener('click', () => {
+      haptic();
+      Store.updateDurable(d => { d.itemsRemoved = []; });
+      toast('Poistetut varusteet palautettu.');
+    });
+
     /* --- Datakerrokset --- */
     $('#btnResetSession').addEventListener('click', () => {
       if (!confirm('Aloitetaanko uusi sessio? Osumapisteet, voimapisteet, kierrokset ja tilavaikutukset nollataan. Kertyvä data säilyy.')) return;
@@ -114,6 +160,9 @@ const SheetView = {
         if (data.langTargets) d.langTargets = data.langTargets;
         if (data.langRanks) d.langRanks = data.langRanks;
         if (data.itemLocations) d.itemLocations = data.itemLocations;
+        if (data.itemQty) d.itemQty = data.itemQty;
+        if (Array.isArray(data.itemsRemoved)) d.itemsRemoved = data.itemsRemoved;
+        if (Array.isArray(data.itemsCustom)) d.itemsCustom = data.itemsCustom;
         if (Array.isArray(data.log)) d.log = data.log;
         d.moneyInit = true;
       });
@@ -347,8 +396,46 @@ const SheetView = {
     $('#btnPullDurable').disabled = CONFIG.data.source !== 'sheets';
   },
 
+  /** Lisäyslomake auki/kiinni. Auki mennessä kentät nollataan ja kantopaikka-
+      valikko täytetään, jotta lomake ei kanna edellisen lisäyksen jäämiä. */
+  toggleItemForm(open) {
+    const form = $('#invForm');
+    form.classList.toggle('hidden', !open);
+    $('#btnAddItemOpen').classList.toggle('hidden', open);
+    if (!open) return;
+
+    $('#newItemName').value = '';
+    $('#newItemNote').value = '';
+    $('#newItemQty').value = '1';
+
+    const sel = $('#newItemSlot');
+    sel.innerHTML = '';
+    sel.appendChild(el('option', { value: '', text: 'Määrittelemätön' }));
+    CONFIG.slots.forEach(s => sel.appendChild(el('option', { value: s, text: s })));
+    $('#newItemName').focus();
+  },
+
+  addItem() {
+    const name = $('#newItemName').value.trim();
+    if (!name) { toast('Anna varusteelle nimi.'); return; }
+
+    const qty = Math.max(0, numOf($('#newItemQty'), 1));
+    const note = $('#newItemNote').value.trim();
+    const slot = $('#newItemSlot').value;
+
+    haptic();
+    const id = Store.nextItemId();
+    Store.updateDurable(d => {
+      d.itemsCustom.push({ id: id, name: name, qty: qty, note: note, location: slot });
+      d.itemLocations[id] = slot;
+    });
+    this.toggleItemForm(false);
+    toast(name + ' lisätty.');
+  },
+
   renderInventory() {
-    const c = Store.character, d = Store.durable;
+    const d = Store.durable;
+    const inv = Store.inventory();
     const box = $('#invGroups');
     box.innerHTML = '';
 
@@ -366,12 +453,12 @@ const SheetView = {
 
     // Ryhmien järjestys: configin mukaiset ensin, sitten omat lisäykset.
     const groups = [];
-    CONFIG.slots.forEach(s => { if (c.inventory.some(i => locOf(i) === s)) groups.push(s); });
-    c.inventory.forEach(i => { const l = locOf(i); if (!groups.includes(l)) groups.push(l); });
+    CONFIG.slots.forEach(s => { if (inv.some(i => locOf(i) === s)) groups.push(s); });
+    inv.forEach(i => { const l = locOf(i); if (!groups.includes(l)) groups.push(l); });
 
     let total = 0;
     groups.forEach(slot => {
-      const items = c.inventory.filter(i => locOf(i) === slot);
+      const items = inv.filter(i => locOf(i) === slot);
       const slotWeight = items.reduce((sum, i) => sum + weightOf(i), 0);
       total += slotWeight;
 
@@ -385,25 +472,43 @@ const SheetView = {
           const cur = locOf(i);
           const options = CONFIG.slots.slice();
           if (cur && !options.includes(cur)) options.unshift(cur);
+          // Sijoittamaton esine tarvitsee oman vaihtoehtonsa: ilman sitä valikko
+          // näyttäisi ensimmäistä kantopaikkaa, vaikka esine on ryhmittelemätön.
           const select = el('select', { class: 'slot-select', 'data-item': i.id },
-            options.map(o => el('option', { value: o, text: o, selected: o === cur ? '' : null }))
+            [el('option', { value: '', text: 'Määrittelemätön', selected: cur ? null : '' })]
+              .concat(options.map(o => el('option', { value: o, text: o, selected: o === cur ? '' : null })))
               .concat([el('option', { value: '__custom', text: 'Muu…' })]));
 
-          return el('li', { class: 'inv' }, [
-            el('span', { class: 'inv-qty', text: (i.qty > 1 ? i.qty + '×' : '') }),
+          return el('li', { class: 'inv' + (i.qty === 0 ? ' empty' : '') }, [
             el('div', { class: 'inv-main' }, [
               el('span', { class: 'inv-name', text: i.name }),
               el('span', { class: 'inv-note',
                 text: [i.note, priceText(i), weightText(i)].filter(Boolean).join(' · ') })
             ]),
-            select
+            el('div', { class: 'inv-controls' }, [
+              el('button', { class: 'qty-btn', 'data-qty': '-1', 'data-item': i.id,
+                'aria-label': 'Vähennä', text: '−' }),
+              el('span', { class: 'qty-val', text: i.qty + '×' }),
+              el('button', { class: 'qty-btn', 'data-qty': '1', 'data-item': i.id,
+                'aria-label': 'Lisää', text: '+' }),
+              select,
+              el('button', { class: 'qty-btn inv-del', 'data-del': '1', 'data-item': i.id,
+                'aria-label': 'Poista', text: '✕' })
+            ])
           ]);
         }))
       ]));
     });
 
+    // Poistetut ovat pohjalistassa yhä tallessa, joten ne voi palauttaa.
+    const removed = d.itemsRemoved || [];
+    $('#invRemoved').classList.toggle('hidden', !removed.length);
+    $('#invRemovedText').textContent = removed.length
+      ? removed.length + (removed.length === 1 ? ' varuste poistettu' : ' varustetta poistettu')
+      : '';
+
     $('#invWeight').textContent = total
       ? total.toFixed(1) + ' kg'
-      : c.inventory.length + ' esinettä';
+      : inv.length + ' esinettä';
   }
 };

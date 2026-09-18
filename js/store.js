@@ -110,6 +110,9 @@ const Store = {
       langRanks: {},        // sama avain: lomakkeen tason päälle ansaitut tasot
       log: [],              // päiväkirja, ks. Adventure-moduuli
       itemLocations: {},    // { esineen id: kantopaikka }
+      itemQty: {},          // { esineen id: kpl } — korvaa varustelistan määrän
+      itemsRemoved: [],     // poistettujen varusteiden id:t
+      itemsCustom: [],      // appissa lisätyt varusteet, sama muoto kuin listassa
       levelUp: null,        // appissa tehty tasonnosto, kunnes se on viety Sheetiin
       updatedAt: null
     };
@@ -128,6 +131,9 @@ const Store = {
     this.durable.langRanks = d.langRanks || {};
     this.durable.log = Array.isArray(d.log) ? d.log : [];
     this.durable.itemLocations = d.itemLocations || {};
+    this.durable.itemQty = d.itemQty || {};
+    this.durable.itemsRemoved = Array.isArray(d.itemsRemoved) ? d.itemsRemoved : [];
+    this.durable.itemsCustom = Array.isArray(d.itemsCustom) ? d.itemsCustom : [];
 
     // Vanha tallennus voi olla laskurin lähtöarvoa pienempi (ennen kuin
     // startTravelDay oli olemassa). Sitä pienempi matkapäivä ei ole mahdollinen.
@@ -233,6 +239,38 @@ const Store = {
     this.emit();
   },
 
+  /* ---------------- Varusteet ---------------- */
+
+  /** Näytettävä varustelista: js/inventory-data.js:n lista, johon on sovellettu
+      kertyvän datan muutokset — poistot, kpl-määrät ja appissa lisätyt esineet.
+      Pohjalista pysyy koskemattomana, joten sen muokkaus näkyy heti eikä
+      käyttäjän tekemiä muutoksia tarvitse purkaa. */
+  inventory() {
+    const d = this.durable, c = this.character;
+    const removed = d.itemsRemoved || [];
+    const base = ((c && c.inventory) || [])
+      .filter(i => removed.indexOf(i.id) < 0)
+      .map(i => Object.assign({}, i, { qty: this.qtyOf(i) }));
+    const custom = (d.itemsCustom || [])
+      .map(i => Object.assign({}, i, { custom: true, qty: this.qtyOf(i) }));
+    return base.concat(custom);
+  },
+
+  /** Esineen kappalemäärä: kertyvä arvo voittaa listan oletuksen. */
+  qtyOf(item) {
+    const set = this.durable.itemQty[item.id];
+    return Number.isFinite(set) ? set : (item.qty || 1);
+  },
+
+  /** Uusi id lisätylle varusteelle. Omat esineet erotetaan c-etuliitteellä,
+      jotta ne eivät koskaan törmää pohjalistan id:hin. */
+  nextItemId() {
+    const used = (this.durable.itemsCustom || []).map(i => i.id);
+    let n = 1;
+    while (used.indexOf('c' + n) >= 0) n++;
+    return 'c' + n;
+  },
+
   /* ---------------- Kertyvän datan vienti ---------------- */
 
   /** Sheetiin vietävä muoto: yksi litteä objekti + rivilistat. */
@@ -250,6 +288,9 @@ const Store = {
       langTargets: Object.assign({}, d.langTargets),
       langRanks: Object.assign({}, d.langRanks),
       itemLocations: Object.assign({}, d.itemLocations),
+      itemQty: Object.assign({}, d.itemQty),
+      itemsRemoved: (d.itemsRemoved || []).slice(),
+      itemsCustom: (d.itemsCustom || []).map(i => Object.assign({}, i)),
       levelUp: d.levelUp ? JSON.parse(JSON.stringify(d.levelUp)) : null,
       log: d.log.map(e => Object.assign({}, e))
     };
@@ -284,6 +325,10 @@ const Store = {
     CONFIG.coins.forEach(c => lines.push(c.key + '\t' + (d.money[c.key] || 0)));
     Object.keys(d.langHours).forEach(k => lines.push('lang:' + k + '\t' + d.langHours[k]));
     Object.keys(d.itemLocations).forEach(k => lines.push('slot:' + k + '\t' + d.itemLocations[k]));
+    Object.keys(d.itemQty).forEach(k => lines.push('qty:' + k + '\t' + d.itemQty[k]));
+    (d.itemsRemoved || []).forEach(k => lines.push('poistettu:' + k + '\t1'));
+    (d.itemsCustom || []).forEach(i => lines.push('lisatty:' + i.id + TAB +
+      [i.name, i.qty || 1, i.note || ''].join(' · ')));
     lines.push('');
     lines.push('day\tdate\tmeals\tlangHours\tspentBase\tnotes');
     d.log.forEach(e => {

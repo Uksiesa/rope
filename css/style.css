@@ -476,6 +476,41 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .gear-val { font-family: Georgia, serif; font-size: 17px; color: var(--gold); white-space: nowrap; }
 .db-row .gear-val { color: var(--steel); }
 .inv-qty { width: 28px; font-size: 12px; color: var(--text-faint); }
+
+/* Varusterivi on kaksirivinen: nimi ylle, säätimet alle. Puhelimessa nimi,
+   määränapit, kantopaikka ja poisto eivät mahdu järkevästi samaan riviin. */
+.inv { flex-wrap: wrap; row-gap: 8px; }
+.inv-main { flex: 1 1 100%; }
+.inv.empty .inv-name { color: var(--text-faint); text-decoration: line-through; }
+.inv-controls { display: flex; align-items: center; gap: 6px; width: 100%; }
+.qty-btn {
+  flex: none; width: 34px; min-height: 34px; padding: 0;
+  font-size: 15px; line-height: 1;
+}
+.qty-val {
+  flex: none; min-width: 34px; text-align: center;
+  font-family: Georgia, serif; font-size: 13px; color: var(--text-dim);
+}
+.inv-del { margin-left: auto; color: var(--blood); border-color: #46261f; }
+
+.inv-removed {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft);
+  font-size: 12px; color: var(--text-faint);
+}
+
+.inv-form { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.inv-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.inv-field > span { font-size: 11px; color: var(--text-faint); letter-spacing: .04em; }
+.inv-field input, .inv-field select {
+  font: inherit; font-size: 14px; color: var(--text);
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 9px 10px; min-height: 40px;
+}
+.inv-field-row { display: flex; gap: 8px; }
+.inv-field-row .inv-field:first-child { flex: 0 0 90px; }
+.inv-form-actions { display: flex; gap: 8px; }
+.inv-form-actions button { flex: 1; }
 .inv-weight { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
 .weight-tag { font-size: 12px; color: var(--text-faint); }
 
@@ -669,7 +704,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .ig-weight { font-size: 11.5px; color: var(--text-faint); }
 
 .slot-select {
-  flex: none; width: 104px;
+  flex: 1 1 auto; min-width: 0;
   font: inherit; font-size: 11.5px;
   color: var(--text-dim);
   background: var(--bg-2);

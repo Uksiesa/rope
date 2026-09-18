@@ -11,8 +11,20 @@ aloitus saa hukata kerättyjä kielitunteja tai rahoja.
 | **Kertyvä data** | matkapäivät, kalenteri, muona, rahat, kielten opiskelutunnit ja tuntitavoitteet, päiväkirja, varusteet ja kantopaikat | localStorage, `tm.durable.v2` | Säilyy sessioiden yli. **Tämä viedään Sheetiin** |
 
 Varusteiden nimet tulevat tiedostosta `js/inventory-data.js`, koska niitä ei ole
-hahmolomakkeella. Vain kantopaikka on kertyvää dataa: tiedoston `location` on
-oletus, jonka appissa tehty valinta korvaa pysyvästi.
+hahmolomakkeella. Tiedosto on pohjalista, jonka päälle kertyvä data kirjaa
+muutokset — sitä ei koskaan kirjoiteta appista:
+
+| Kertyvä kenttä | Mitä se tekee |
+|---|---|
+| `itemLocations` | kantopaikka; tiedoston `location` on vain oletus |
+| `itemQty` | kappalemäärä, kun sitä on lisätty tai vähennetty |
+| `itemsRemoved` | pohjalistan esineet jotka on poistettu näkyvistä |
+| `itemsCustom` | appissa lisätyt esineet, id-etuliite `c` |
+
+Pohjalistan esine ei katoa poistettaessa vaan piiloutuu, ja Varusteet-kortin
+"Palauta" tuo kaikki takaisin. Appissa lisätty esine poistuu lopullisesti, ja
+samalla siivotaan sen kantopaikka ja kappalemäärä — muuten seuraava lisäys voisi
+saada saman id:n ja periä vanhat arvot.
 
 Session data on tarkoituksella katoavaa: osumapisteet palautuvat pelin sisäisen
 levon myötä eikä niitä ole mielekästä kirjata ylös. Kertyvä data taas kuvaa

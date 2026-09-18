@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=24">
+<link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
 
@@ -427,8 +427,39 @@
         <h2>Varusteet</h2>
         <span class="weight-tag" id="invWeight">—</span>
       </div>
-      <p class="hint">Kantopaikan voi vaihtaa suoraan listasta — muutos tallentuu kertyvään dataan.</p>
+      <p class="hint">Kantopaikan, määrän ja poistot voi tehdä suoraan listasta — muutokset tallentuvat kertyvään dataan.</p>
       <div id="invGroups"></div>
+
+      <div class="inv-removed hidden" id="invRemoved">
+        <span id="invRemovedText"></span>
+        <button class="ghost" id="btnRestoreItems">Palauta</button>
+      </div>
+
+      <button class="wide" id="btnAddItemOpen">+ Lisää varuste</button>
+      <div class="inv-form hidden" id="invForm">
+        <label class="inv-field">
+          <span>Nimi</span>
+          <input type="text" id="newItemName" placeholder="Esim. Köysi" autocomplete="off">
+        </label>
+        <div class="inv-field-row">
+          <label class="inv-field">
+            <span>Kpl</span>
+            <input type="number" id="newItemQty" inputmode="numeric" value="1" min="0">
+          </label>
+          <label class="inv-field">
+            <span>Kantopaikka</span>
+            <select id="newItemSlot"></select>
+          </label>
+        </div>
+        <label class="inv-field">
+          <span>Tarkenne</span>
+          <input type="text" id="newItemNote" placeholder="vapaaehtoinen" autocomplete="off">
+        </label>
+        <div class="inv-form-actions">
+          <button class="primary" id="btnAddItem">Lisää</button>
+          <button class="ghost" id="btnAddItemCancel">Peruuta</button>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -482,19 +513,19 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=24"></script>
-<script src="js/seed-data.js?v=24"></script>
-<script src="js/inventory-data.js?v=24"></script>
-<script src="js/util.js?v=24"></script>
-<script src="js/rules.js?v=24"></script>
-<script src="js/store.js?v=24"></script>
-<script src="js/sheets.js?v=24"></script>
-<script src="js/modes/battle.js?v=24"></script>
-<script src="js/modes/adventure.js?v=24"></script>
-<script src="js/modes/action.js?v=24"></script>
-<script src="js/modes/magic.js?v=24"></script>
-<script src="js/modes/levelup.js?v=24"></script>
-<script src="js/modes/sheet.js?v=24"></script>
-<script src="js/app.js?v=24"></script>
+<script src="js/config.js?v=25"></script>
+<script src="js/seed-data.js?v=25"></script>
+<script src="js/inventory-data.js?v=25"></script>
+<script src="js/util.js?v=25"></script>
+<script src="js/rules.js?v=25"></script>
+<script src="js/store.js?v=25"></script>
+<script src="js/sheets.js?v=25"></script>
+<script src="js/modes/battle.js?v=25"></script>
+<script src="js/modes/adventure.js?v=25"></script>
+<script src="js/modes/action.js?v=25"></script>
+<script src="js/modes/magic.js?v=25"></script>
+<script src="js/modes/levelup.js?v=25"></script>
+<script src="js/modes/sheet.js?v=25"></script>
+<script src="js/app.js?v=25"></script>
 </body>
 </html>
