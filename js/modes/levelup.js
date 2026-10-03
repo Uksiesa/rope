@@ -90,6 +90,7 @@ const LevelUp = {
       };
     });
     Store.recompute();
+    DayLog.note('Hahmon taso nousi', String(nextLevel));
     toast('Taso ' + nextLevel + '. Muista viedä muutokset Sheetiin.');
   },
 

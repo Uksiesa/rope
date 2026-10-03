@@ -158,11 +158,95 @@ const DayLog = {
     return e;
   },
 
+  /* Osa kirjauksista syntyy heittosumman piirron yhteydessä, ja kirjoitus
+     kertyvään dataan piirtää näkymän uudelleen. Vartija katkaisee kierron:
+     sisempi kutsu kirjaisi saman tiedon uudelleen, joten se voidaan ohittaa. */
+  writing: false,
+
+  write(fn) {
+    if (this.writing) return;
+    this.writing = true;
+    try { Store.updateDurable(fn); } finally { this.writing = false; }
+  },
+
+  /** Kirjaa tapahtuman kuluvalle päivälle. Muut näkymät kutsuvat tätä, jotta
+      päiväkirja kertyy itsestään pelin aikana eikä sitä tarvitse täyttää käsin. */
+  add(ev) {
+    this.write(d => {
+      const e = this.entry(d, d.day);
+      if (!Array.isArray(e.events)) e.events = [];
+      e.events.push(Object.assign({ at: Date.now() }, ev));
+    });
+  },
+
+  /** Päivittää samalla avaimella kirjattua tapahtumaa, tai luo sen. Heittoketju
+      kasvaa pala kerrallaan, eikä jokaisesta näppäilystä haluta omaa riviään. */
+  update(key, ev) {
+    this.write(d => {
+      const e = this.entry(d, d.day);
+      if (!Array.isArray(e.events)) e.events = [];
+      const prev = e.events.find(x => x.key === key);
+      if (prev) { Object.assign(prev, ev); return; }
+      // Avaimeen on koodattu päivä, jona heitto tehtiin. Jos päivä on sen
+      // jälkeen vaihtunut, ruudulle jäänyt heitto ei saa kirjautua uudelleen
+      // uuden päivän tapahtumaksi.
+      if (this.keyDay(key) !== d.day) return;
+      e.events.push(Object.assign({ key: key, at: Date.now() }, ev));
+    });
+  },
+
+  /** Yksittäinen toimenpide: vasemmalle selite, oikealle arvo. Tämä kattaa
+      kaiken sen toiminnan jolla ei ole omaa erikoisrivinmuotoaan. */
+  note(label, value) { this.add({ t: 'act', label: label, value: value || '' }); },
+
+  /** Kerryttää saman päivän samaan riviin. Muona- ja rahanappeja painetaan
+      monta kertaa peräkkäin, eikä jokainen painallus ansaitse omaa riviään. */
+  bump(id, label, delta, fmt) {
+    if (!delta) return;
+    const key = 'acc-' + Store.durable.day + '-' + id;
+    this.write(d => {
+      const e = this.entry(d, d.day);
+      if (!Array.isArray(e.events)) e.events = [];
+      let prev = e.events.find(x => x.key === key);
+      if (!prev) {
+        prev = { key: key, t: 'act', label: label, delta: 0, fmt: fmt || '', at: Date.now() };
+        e.events.push(prev);
+      }
+      prev.delta += delta;
+    });
+  },
+
+  /** Tapahtuman oikean reunan teksti. Rahat ovat alinta yksikköä, joten ne
+      näytetään kolikkoina eikä paljaana lukuna. */
+  actValue(x) {
+    if (x.delta === undefined) return x.value || '✓';
+    if (x.fmt === 'money') return (x.delta > 0 ? '+' : '−') + Money.formatBase(Math.abs(x.delta));
+    return signed(x.delta);
+  },
+
+  /** Avaimen muoto on "laji-päivä-aikaleima". */
+  key(kind) { return kind + '-' + Store.durable.day + '-' + Date.now(); },
+  keyDay(key) { return parseInt(String(key).split('-')[1], 10); },
+
+  /** Osumapistemuutokset yhteen laskettuna: taistelu tuottaa niitä kymmeniä,
+      eikä jokainen kuulu omalle rivilleen. */
+  hpTotals(e) {
+    return (e.events || []).filter(x => x.t === 'hp').reduce((acc, x) => {
+      if (x.delta < 0) acc.lost += -x.delta; else acc.healed += x.delta;
+      return acc;
+    }, { lost: 0, healed: 0 });
+  },
+
+  events(e, type) {
+    return (e.events || []).filter(x => x.t === type);
+  },
+
   /** Onko merkinnässä mitään kirjattavaa? */
   isEmpty(e) {
     return (e.meals === null || e.meals === undefined) &&
            !Object.keys(e.lang || {}).length &&
-           !(e.spend || []).length;
+           !(e.spend || []).length &&
+           !(e.events || []).length;
   },
 
   langTotal(e) {
@@ -180,6 +264,12 @@ const Adventure = {
 
   logExpanded: false,
 
+  /** Muonalaskuri seuraa vain omia varoja: tavernassa syöty ateria ei vähennä
+      sitä, joten teksti sanoo mistä ateria tuli. */
+  mealText(n) {
+    return n === 1 ? '1 ateria muonavaroista' : n + ' ateriaa muonavaroista';
+  },
+
   init() {
     $('.day-actions').addEventListener('click', e => {
       const b = e.target.closest('button[data-advance]');
@@ -196,7 +286,7 @@ const Adventure = {
       const left = Store.durable.food;
       toast(left <= CONFIG.food.lowWarning
         ? 'Päivä kului. Muona vähissä: ' + left + '.'
-        : 'Päivä kului — muonaa jäljellä ' + left + '.');
+        : 'Päivä kului — muonavaroja jäljellä ' + left + '.');
     });
 
     $('#dayBack').addEventListener('click', () => {
@@ -219,7 +309,9 @@ const Adventure = {
       const b = e.target.closest('button[data-food]');
       if (!b) return;
       haptic();
+      const before = Store.durable.food;
       Store.updateDurable(d => { d.food = Math.max(0, d.food + parseInt(b.dataset.food, 10)); });
+      DayLog.bump('food', 'Muonavarat', Store.durable.food - before);
     });
 
     $('#foodSet').addEventListener('change', e => {
@@ -233,9 +325,14 @@ const Adventure = {
       const b = e.target.closest('button[data-coin]');
       if (!b) return;
       haptic();
+      const key = b.dataset.coin;
+      const before = Money.toBase(Store.durable.money);
       Store.updateDurable(d => {
-        d.money[b.dataset.coin] = Math.max(0, (d.money[b.dataset.coin] || 0) + parseInt(b.dataset.delta, 10));
+        d.money[key] = Math.max(0, (d.money[key] || 0) + parseInt(b.dataset.delta, 10));
       });
+      // Käsin lisätty tai poistettu raha on yhtä lailla päivän tapahtuma kuin
+      // ostos, vaikka sille ei ole selitettä.
+      DayLog.bump('money', 'Rahaa käsin', Money.toBase(Store.durable.money) - before, 'money');
     });
 
     $('#coinNormalize').addEventListener('click', () => {
@@ -307,6 +404,7 @@ const Adventure = {
           // myös silloin kun tavoitetta on sen jälkeen muutettu.
           d.langUndo[key] = { hours: before - d.langHours[key], target: d.langTargets[key] || 0 };
         });
+        DayLog.note('Kielitaso · ' + langLabel(key), 'nousi');
         toast(langLabel(key) + ': taso nousi. Aseta seuraavan tason tuntitavoite.');
         return;
       }
@@ -323,6 +421,7 @@ const Adventure = {
           d.langHours[key] = (d.langHours[key] || 0) + back;
           delete d.langUndo[key];
         });
+        DayLog.note('Kielitaso · ' + langLabel(key), 'peruttu');
         toast(langLabel(key) + ': taso peruttu' + (back ? ', ' + back + ' h palautettu.' : '.'));
         return;
       }
@@ -495,7 +594,8 @@ const Adventure = {
       acc.spend += DayLog.spendTotal(e);
       return acc;
     }, { meals: 0, lang: 0, spend: 0 });
-    $('#logSummary').textContent = totals.meals + ' ateriaa · ' + totals.lang + ' h · ' +
+    $('#logSummary').textContent = (totals.meals === 1 ? '1 ateria' : totals.meals + ' ateriaa') +
+      ' · ' + totals.lang + ' h · ' +
       Money.formatBase(totals.spend);
 
     const ul = $('#logList');
@@ -508,8 +608,25 @@ const Adventure = {
       const langTotal = DayLog.langTotal(e);
       const spendTotal = DayLog.spendTotal(e);
 
+      const skills = DayLog.events(e, 'skill');
+      const spells = DayLog.events(e, 'spell');
+      const rolls = DayLog.events(e, 'roll');
+      const fights = DayLog.events(e, 'fight');
+      const acts = DayLog.events(e, 'act').filter(x => x.delta === undefined || x.delta !== 0);
+      const hp = DayLog.hpTotals(e);
+
       const summary = [];
-      if (e.meals !== null && e.meals !== undefined) summary.push(e.meals === 0 ? 'paasto' : e.meals + ' ateriaa');
+      if (e.meals !== null && e.meals !== undefined) {
+        summary.push(e.meals === 0 ? 'paasto' : Adventure.mealText(e.meals));
+      }
+      if (skills.length) summary.push(skills.length + (skills.length === 1 ? ' taito' : ' taitoa'));
+      if (spells.length) summary.push(spells.length + (spells.length === 1 ? ' loitsu' : ' loitsua'));
+      if (fights.length || rolls.length) {
+        summary.push((fights.length || 1) + ' taistelu' +
+          (rolls.length ? ' · ' + rolls.length + (rolls.length === 1 ? ' heitto' : ' heittoa') : ''));
+      }
+      if (hp.lost) summary.push('−' + hp.lost + ' hp');
+      if (acts.length) summary.push(acts.length + (acts.length === 1 ? ' toimi' : ' toimea'));
       if (langTotal) summary.push(langTotal + ' h opiskelua');
       if (spendTotal) summary.push(Money.formatBase(spendTotal));
 
@@ -537,8 +654,33 @@ const Adventure = {
       if (e.meals !== null && e.meals !== undefined) {
         details.appendChild(el('div', { class: 'log-row' }, e.meals === 0
           ? [el('span', { text: 'Paasto' }), el('b', { text: 'ei muonaa' })]
-          : [el('span', { text: 'Muonaa kului' }), el('b', { text: '−' + e.meals })]));
+          : [el('span', { text: Adventure.mealText(e.meals) }), el('b', { text: '−' + e.meals })]));
       }
+
+      // Pelin tapahtumat siinä järjestyksessä kuin ne kirjautuivat.
+      skills.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: 'Taito · ' + x.name }),
+        el('b', { text: fmtNum(x.total) })
+      ])));
+      spells.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: 'Loitsu · ' + x.name }),
+        el('b', { text: '−' + x.pp + ' pp' })
+      ])));
+      rolls.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: (x.target === 'attack' ? 'Hyökkäys · ' : 'Puolustus · ') + x.name +
+                           (x.round ? ' (kr ' + x.round + ')' : '') }),
+        el('b', { text: fmtNum(x.total) })
+      ])));
+      if (hp.lost) details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: 'Osumapisteitä menetetty' }), el('b', { text: '−' + hp.lost })
+      ]));
+      if (hp.healed) details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: 'Osumapisteitä palautui' }), el('b', { text: '+' + hp.healed })
+      ]));
+      acts.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: x.label }),
+        el('b', { text: DayLog.actValue(x) })
+      ])));
       // Kuurivi on aina mukana, joten tyhjyys päätellään muista riveistä.
       if (details.children.length === 1) {
         details.appendChild(el('div', { class: 'log-row' }, [el('span', { text: 'Ei merkintöjä' }), el('b', { text: '—' })]));

@@ -200,6 +200,10 @@ const CONFIG = {
     // Special-sarakkeesta (teksti "kahden käden"); tämä lista on varalla.
     twoHandedWeapons: ['Quarterstaff'],
 
+    // Kuinka monta prosenttia kahden käden aseen hyökkäysbonuksesta voi siirtää
+    // parryyn. Yhden käden aseilla rajaa ei ole.
+    twoHandedParryPct: 50,
+
     // Taidot joiden Classes-solu ei kerro oikeaa ominaisuutta. Lomakkeessa
     // aseettoman taistelun rivit ovat identtiset, vaikka lyönti käyttää Voimaa
     // ja heitto Ketteryyttä.

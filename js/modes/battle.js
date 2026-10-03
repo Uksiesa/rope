@@ -28,9 +28,13 @@ const Battle = {
       if (!b) return;
       haptic();
       const max = Store.character.vitals.hitsMax;
+      const before = Store.session.hpCur;
       Store.update(s => {
         s.hpCur = b.dataset.hp === 'full' ? max : clamp(s.hpCur + parseInt(b.dataset.hp, 10), 0, max);
       });
+      // Todellinen muutos rajauksen jälkeen, ei napin nimellisarvo.
+      const delta = Store.session.hpCur - before;
+      if (delta) DayLog.add({ t: 'hp', delta: delta });
     });
 
     $('#dbComponents').addEventListener('change', e => {
@@ -60,6 +64,7 @@ const Battle = {
       haptic();
       this.justFreed = false;
       Store.update(s => { s.round = 1; s.effects = []; });
+      DayLog.add({ t: 'fight' });
       toast('Uusi taistelu — kierros 1, vaikutukset poistettu.');
     });
 
@@ -145,6 +150,7 @@ const Battle = {
       x.ppCur = clamp(x.ppCur - cost.pp, 0, Store.character.vitals.ppMax);
     });
     this.lastCast = 'Loitsittu kierroksella ' + s.round + ' · −' + cost.pp + ' pp · jäljellä ' + s.ppCur;
+    DayLog.add({ t: 'spell', name: st.weapon ? st.weapon.name : 'loitsu', pp: cost.pp });
     this.render();
     toast(sp.name + ' loitsittu — ' + cost.pp + ' pp, jäljellä ' + s.ppCur + '.');
   },
@@ -161,6 +167,8 @@ const Battle = {
     };
     this.justFreed = false;
     Store.update(s => { s.effects.push(eff); });
+    DayLog.note('Tilavaikutus · ' + eff.name,
+      eff.type === 'stun' ? eff.rounds + ' kr' : '−' + eff.perRound + ' hp/kr');
     toast(eff.type === 'stun'
       ? eff.name + ': ' + eff.rounds + ' kierrosta'
       : eff.name + ': −' + eff.perRound + ' hp/kierros');
@@ -171,11 +179,16 @@ const Battle = {
     haptic();
     const max = Store.character.vitals.hitsMax;
     let bleed = 0;
+    let bled = 0;
     const freed = [];
 
     Store.update(s => {
       bleed = s.effects.filter(x => x.type === 'bleed').reduce((sum, x) => sum + x.perRound, 0);
-      if (bleed) s.hpCur = clamp(s.hpCur - bleed, 0, max);
+      if (bleed) {
+        const before = s.hpCur;
+        s.hpCur = clamp(s.hpCur - bleed, 0, max);
+        bled = before - s.hpCur;
+      }
 
       s.effects.forEach(x => {
         if (x.type !== 'stun') return;
@@ -186,6 +199,8 @@ const Battle = {
       s.round += 1;
     });
     this.lastCast = null;
+    if (bled) DayLog.add({ t: 'hp', delta: -bled, note: 'verenvuoto' });
+    freed.forEach(name => DayLog.note('Tilavaikutus päättyi · ' + name, ''));
 
     this.justFreed = freed.length > 0;
     this.render();
@@ -226,7 +241,10 @@ const Battle = {
     const blocked = weapon.blocks || [];
 
     const pool = weapon.ob;
-    const pct = canParry ? clamp(s.splitPct, 0, 100) : 0;
+    // Kahden käden aseella parryyn kelpaa vain osa poolista. Säilytetään
+    // pelaajan oma valinta sessiossa, jotta se palautuu aseen vaihtuessa.
+    const maxPct = canParry ? Rules.maxParryPct(weapon) : 0;
+    const pct = clamp(s.splitPct, 0, maxPct);
     const parry = Math.round(pool * pct / 100);
     const attack = pool - parry;
 
@@ -247,7 +265,8 @@ const Battle = {
     const bleeds = s.effects.filter(x => x.type === 'bleed');
 
     return {
-      options, weapon, canParry, pool, pct, parry, attack, components,
+      options, weapon, canParry, pool, pct, maxPct, parry, attack, components,
+      parryLimited: canParry && maxPct < 100,
       isSpell: weapon.kind === 'spell',
       fumble: Rules.fumbleFor(weapon),
       dbBase, dbTotal: dbBase + parry,
@@ -359,17 +378,23 @@ const Battle = {
     $('#atkValue').textContent = st.attack;
     $('#parryValue').textContent = st.parry;
     const slider = $('#splitSlider');
+    slider.max = st.canParry ? st.maxPct : 100;
     slider.value = st.pct;
     slider.step = CONFIG.combat.splitStep;
     slider.disabled = !st.canParry;
-    slider.style.setProperty('--pct', st.pct + '%');
+    slider.style.setProperty('--pct', (st.maxPct ? st.pct / st.maxPct * 100 : 0) + '%');
     $('#splitQuick').classList.toggle('disabled', !st.canParry);
     $$('#splitQuick button').forEach(b => {
-      b.disabled = !st.canParry;
-      b.classList.toggle('active', parseInt(b.dataset.split, 10) === st.pct);
+      const val = parseInt(b.dataset.split, 10);
+      b.disabled = !st.canParry || val > st.maxPct;
+      b.classList.toggle('active', val === st.pct);
     });
-    $('.slider-ticks').firstElementChild.textContent =
+    const ticks = $('.slider-ticks');
+    ticks.firstElementChild.textContent =
       st.canParry ? 'kaikki hyökkäykseen' : 'tällä aseella ei parryä';
+    ticks.lastElementChild.textContent = !st.canParry ? ''
+      : st.parryLimited ? 'enintään ' + st.maxPct + ' % parryyn (kahden käden ase)'
+      : 'kaikki parryyn';
 
     /* --- DB-komponentit --- */
     const list = $('#dbComponents');
@@ -413,10 +438,22 @@ const Battle = {
       out.textContent = '—';
       formula.textContent = baseLabel + ' ' + signed(base) + ' — syötä heitto';
       $('#fumbleWarn').classList.add('hidden');
+      this.logKey = null;
       return;
     }
     const roll = rollChainTotal(rolls);
-    out.textContent = fmtNum(roll + base + mod);
+    const total = roll + base + mod;
+    out.textContent = fmtNum(total);
+
+    // Heittoketju päivittää samaa riviä; uusi rivi syntyy kun kenttä on tyhjätty.
+    if (!this.logKey) this.logKey = DayLog.key('atk');
+    DayLog.update(this.logKey, {
+      t: 'roll',
+      target: target,
+      name: target === 'attack' ? (st.weapon ? st.weapon.name : 'hyökkäys') : 'puolustus',
+      total: total,
+      round: Store.session.round
+    });
     formula.textContent =
       (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
       ' (heitto) ' + signed(base) + ' (' + baseLabel + ')' +

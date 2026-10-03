@@ -91,6 +91,8 @@ const Action = {
     // Loitsubonusten oletustila tulee loitsuvälilehden Oletus-sarakkeesta,
     // ja pelaaja voi poiketa siitä yhtä heittoa varten.
     this.spellOff = {};
+    // Uusi taito = uusi päiväkirjarivi; saman taidon heittoketju päivittää omaansa.
+    this.logKey = null;
     const sk = this.skills().find(x => x.id === id);
     this.bonusesFor(sk).forEach(b => { if (!b.defaultOn) this.spellOff[b.key] = true; });
     $('#actionRoll').value = '';
@@ -225,12 +227,17 @@ const Action = {
 
     if (!rolls.length) {
       out.textContent = '—';
+      this.logKey = null;
       formula.textContent = 'Bonus ' + signed(s.total + spellSum) +
         (spellSum ? ' (lisät ' + signed(spellSum) + ')' : '') + ' — syötä heitto';
       return;
     }
     const roll = rollChainTotal(rolls);
-    out.textContent = fmtNum(roll + s.total + mod + spellSum);
+    const total = roll + s.total + mod + spellSum;
+    out.textContent = fmtNum(total);
+
+    if (!this.logKey) this.logKey = DayLog.key('skill');
+    DayLog.update(this.logKey, { t: 'skill', name: s.display || s.name, total: total });
     formula.textContent =
       (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
       ' (heitto) ' + signed(s.total) + ' (' + (s.display || s.name) + ')' +

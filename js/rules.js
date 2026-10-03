@@ -252,6 +252,14 @@ const Rules = {
   /** Loitsun todellinen hinta. Loitsuvälilehden Huomio voi sisältää ehdon
       "kahden käden aseella maksaa *2", joka kertoo hinnan kun kahden käden ase
       on käytössä (Taistelu-välilehdellä valittu ase). */
+  /** Kuinka suuren osan hyökkäysbonuksesta voi siirtää parryyn. Kahden käden
+      ase ei käänny torjuntaan yhtä nopeasti, joten siitä kelpaa vain osa. */
+  maxParryPct(weapon) {
+    if (!this.isTwoHanded(weapon)) return 100;
+    const limit = this.t().twoHandedParryPct;
+    return Number.isFinite(limit) ? limit : 50;
+  },
+
   spellCost(character, spell, weapon) {
     const base = spell ? spell.pp : 0;
     const out = { pp: base, base: base, multiplier: 1, reason: '' };

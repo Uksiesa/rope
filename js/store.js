@@ -377,6 +377,39 @@ const Store = {
       lines.push([e.day, date, moon, moonDay, lit, e.meals === null ? '' : e.meals,
                   lang, spent, notes].join(TAB));
     });
+
+    // Päivän tapahtumat: taidot, loitsut, taisteluheitot ja osumapisteet.
+    // Omana taulukkonaan, koska niitä on päivää kohti vaihteleva määrä.
+    const labels = { skill: 'taito', spell: 'loitsu', fight: 'taistelu alkoi',
+                     hp: 'osumapisteet', act: 'toimi' };
+    if (d.log.some(e => (e.events || []).length || (e.spend || []).length)) {
+      lines.push('');
+      lines.push('TAPAHTUMAT');
+      lines.push(['day', 'date', 'laji', 'nimi', 'arvo'].join(TAB));
+      d.log.forEach(e => {
+        const day = typeof Calendar !== 'undefined' ? Calendar.format(e.day) : (e.date || '');
+        // Ostokset ovat omassa listassaan, mutta lokissa ne kuuluvat samaan
+        // tapahtumavirtaan kuin kaikki muukin päivän toiminta.
+        (e.spend || []).forEach(sp => lines.push(
+          [e.day, day, 'ostos', sp.label || 'ostos',
+           '-' + (typeof Money !== 'undefined' ? Money.formatBase(sp.base) : sp.base)].join(TAB)));
+
+        (e.events || []).forEach(x => {
+          const laji = x.t === 'roll'
+            ? (x.target === 'attack' ? 'hyokkays' : 'puolustus')
+            : (labels[x.t] || x.t);
+          const arvo = x.t === 'spell' ? '-' + x.pp + ' pp'
+                     : x.t === 'hp' ? (x.delta > 0 ? '+' : '') + x.delta
+                     : x.t === 'act' ? (typeof DayLog !== 'undefined' ? DayLog.actValue(x)
+                                        : (x.value || x.delta))
+                     : (x.total === undefined ? '' : x.total);
+          const nimi = [x.name || x.label || '', x.round ? 'kierros ' + x.round : '', x.note || '']
+            .filter(Boolean).join(' · ');
+          lines.push([e.day, day, laji, nimi, arvo].join(TAB));
+        });
+      });
+    }
+
     return lines.join('\n');
   },
 

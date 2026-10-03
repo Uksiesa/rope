@@ -10,6 +10,36 @@ aloitus saa hukata kerättyjä kielitunteja tai rahoja.
 | **Session data** | osuma- ja voimapisteet, taistelukierros, tilavaikutukset, DB-togglet, asevalinta | localStorage, `tm.session.v2` | Yksi peli-ilta. "Aloita uusi sessio" nollaa |
 | **Kertyvä data** | matkapäivät, kalenteri, muona, rahat, kielten opiskelutunnit ja tuntitavoitteet, päiväkirja, varusteet ja kantopaikat | localStorage, `tm.durable.v2` | Säilyy sessioiden yli. **Tämä viedään Sheetiin** |
 
+## Päiväkirja kertyy itsestään
+
+Päivän merkintään kirjautuvat ateriat, opiskelutunnit ja ostokset, ja lisäksi
+pelin tapahtumat `events`-listaan:
+
+| Laji | Mistä | Mitä kirjautuu |
+|---|---|---|
+| `skill` | Teot | taidon nimi ja heiton summa |
+| `spell` | Taika ja Taistelu | loitsun nimi ja voimapisteet |
+| `roll` | Taistelu | ase tai puolustus, summa ja kierros |
+| `fight` | Taistelu, "Uusi taistelu" | taistelun alku |
+| `hp` | Taistelu | osumapisteiden muutos, verenvuoto mukaan lukien |
+| `act` | kaikkialta | muu toiminta: muona, rahat, varusteet, tilavaikutukset, voimapisteet, kieli- ja hahmotasot |
+
+Ostokset ovat omassa `spend`-listassaan, mutta Sheet-viennissä ne kulkevat
+samassa tapahtumavirrassa kuin kaikki muu. Toistuva napinpainallus kertyy
+samaan riviin: muonan `+5` ja `+10` näkyvät yhtenä rivinä `+15`.
+
+Heittoketju päivittää omaa riviään eikä tee uutta jokaisesta näppäilystä.
+Tapahtuman avaimeen on koodattu päivä, jolloin heitto tehtiin: ruudulle jäänyt
+heitto ei siis kirjaudu uudelleen, kun päivä vaihtuu.
+
+Kirjaus tapahtuu osin heittosumman piirron yhteydessä, ja kirjoitus kertyvään
+dataan piirtää näkymän uudelleen. `DayLog.write` katkaisee kierron vartijalla —
+ilman sitä piirto ja kirjaus kutsuisivat toisiaan loputtomasti.
+
+Muonalaskuri seuraa vain omia varoja, joten ateriat kirjataan muodossa
+"2 ateriaa muonavaroista". Tavernassa syöty ateria ei kuluta varoja, eikä
+päiväkirja väitä niin.
+
 Varusteiden nimet tulevat tiedostosta `js/inventory-data.js`, koska niitä ei ole
 hahmolomakkeella. Tiedosto on pohjalista, jonka päälle kertyvä data kirjaa
 muutokset — sitä ei koskaan kirjoiteta appista:

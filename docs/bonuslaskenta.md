@@ -17,6 +17,7 @@ Nämä on johdettu Ballarionin lomakkeesta ja todennettu sitä vastaan.
 | **Taidon kokonaisbonus** | tasobonus + ominaisuusbonus + ammatin tasobonus + esine + muu |
 | **Ominaisuusbonus** | taulukkohaku (TEMP) + kiltatasojen tuottama lisä |
 | **Puolustus (DB)** | nopeusbonus + varusteiden osuus |
+| **Parryn yläraja** | kahden käden aseella `CONFIG.rules.twoHandedParryPct` (50 %) hyökkäysbonuksesta, muuten koko bonus |
 | **Voimapisteet** | kolmen realmi-ominaisuuden pistekeskiarvo × taso |
 | **Osumapisteet** | 30 + kestävyysbonus + taso × tasokerroin. Kerroin riippuu ammatista ja voi vaihdella tason mukaan; Laulajalla se on aina 2. Kestävyysbonus on kokonaisbonus, eli `Extra`-sarake mukaan lukien: 30 + 5 + 7 × 2 = 49 |
 | **Kehityspisteet** | viiden kehitysominaisuuden taulukkoarvojen summa |

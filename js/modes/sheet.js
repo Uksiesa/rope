@@ -15,6 +15,7 @@ const SheetView = {
       const sel = e.target.closest('select[data-item]');
       if (!sel) return;
       const id = sel.dataset.item;
+      const item = Store.inventory().find(i => i.id === id);
       if (sel.value === '__custom') {
         const now = Store.durable.itemLocations[id] || '';
         const val = prompt('Uusi kantopaikka:', now);
@@ -24,6 +25,8 @@ const SheetView = {
         Store.updateDurable(d => { d.itemLocations[id] = sel.value; });
       }
       haptic();
+      DayLog.note('Kantopaikka · ' + (item ? item.name : id),
+                  Store.durable.itemLocations[id] || 'määrittelemätön');
     });
 
     /* --- Kappalemäärä ja poisto --- */
@@ -48,16 +51,21 @@ const SheetView = {
             d.itemsRemoved.push(id);
           }
         });
+        DayLog.note('Varuste poistettu · ' + item.name, '');
         toast(item.name + ' poistettu.');
         return;
       }
 
       haptic();
       const step = parseInt(btn.dataset.qty, 10);
+      const before = Store.inventory().find(i => i.id === id);
       Store.updateDurable(d => {
-        const item = Store.inventory().find(i => i.id === id);
-        d.itemQty[id] = Math.max(0, (item ? item.qty : 1) + step);
+        d.itemQty[id] = Math.max(0, (before ? before.qty : 1) + step);
       });
+      const after = Store.inventory().find(i => i.id === id);
+      if (before && after) {
+        DayLog.bump('item-' + id, 'Varuste · ' + before.name, after.qty - before.qty);
+      }
     });
 
     /* --- Uusi varuste --- */
@@ -69,6 +77,7 @@ const SheetView = {
     $('#btnRestoreItems').addEventListener('click', () => {
       haptic();
       Store.updateDurable(d => { d.itemsRemoved = []; });
+      DayLog.note('Poistetut varusteet palautettu', '');
       toast('Poistetut varusteet palautettu.');
     });
 
@@ -430,6 +439,7 @@ const SheetView = {
       d.itemLocations[id] = slot;
     });
     this.toggleItemForm(false);
+    DayLog.note('Varuste lisätty · ' + name, qty > 1 ? qty + ' kpl' : '');
     toast(name + ' lisätty.');
   },
 

@@ -14,9 +14,11 @@ const Magic = {
       if (!b) return;
       haptic();
       const max = Store.character.vitals.ppMax;
+      const before = Store.session.ppCur;
       Store.update(s => {
         s.ppCur = b.dataset.pp === 'full' ? max : clamp(s.ppCur + parseInt(b.dataset.pp, 10), 0, max);
       });
+      DayLog.bump('pp', 'Voimapisteet käsin', Store.session.ppCur - before);
     });
 
     $('#spellSearch').addEventListener('input', e => {
@@ -97,6 +99,8 @@ const Magic = {
     const lasting = Rules.spellHasEffect(Store.character, sp.name);
     if (lasting) this.activate(sp.name);
 
+    DayLog.add({ t: 'spell', name: sp.name, pp: cost.pp, list: sp.list });
+
     toast(sp.name + ' loitsittu — ' + cost.pp + ' pp' +
           (cost.multiplier > 1 ? ' (' + cost.reason + ')' : '') +
           ', jäljellä ' + Store.session.ppCur +
@@ -126,9 +130,11 @@ const Magic = {
   },
 
   deactivate(id) {
+    const gone = (Store.session.activeSpells || []).find(a => a.id === id);
     Store.update(s => {
       s.activeSpells = s.activeSpells.filter(a => a.id !== id);
     });
+    if (gone) DayLog.note('Loitsu päättyi · ' + gone.spell, '');
   },
 
   renderActive() {
