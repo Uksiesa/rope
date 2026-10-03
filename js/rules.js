@@ -191,10 +191,34 @@ const Rules = {
         .forEach(b => out.push({
           key: a.id + '|' + b.id,
           spell: a.spell,
+          source: a.spell,
           value: b.value,
           note: b.note,
           defaultOn: b.defaultOn
         }));
+    });
+    return out;
+  },
+
+  /** Varusteiden antamat taitobonukset. Esine vaikuttaa kun se on mukana eikä
+      sen määrä ole nolla; napista bonuksen voi kytkeä pois yhtä heittoa varten.
+      Bonus annetaan varustelistassa, jotta se katoaa esineen mukana. */
+  itemSkillBonuses(inventory, skill) {
+    const out = [];
+    if (!skill) return out;
+    (inventory || []).forEach(item => {
+      if ((item.qty === undefined ? 1 : item.qty) <= 0) return;
+      const rows = item.bonus ? [].concat(item.bonus) : [];
+      rows.forEach((b, n) => {
+        if (!this.skillMatches(skill, b.skill)) return;
+        out.push({
+          key: 'item|' + item.id + '|' + n,
+          source: item.name,
+          value: b.value || 0,
+          note: b.note || '',
+          defaultOn: b.defaultOn !== false
+        });
+      });
     });
     return out;
   },

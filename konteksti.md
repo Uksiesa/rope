@@ -41,6 +41,11 @@ eivät ole käytössä sillä aseella (kilpi jousta käytettäessä).
 ja kuun kierron pituus ovat `js/config.js`:ssä; oikea gregoriaaninen kalenteri
 saadaan vaihtamalla kuukausitaulukko.
 
+Kuun vaiheita on kahdeksan, joten yksi nimi kattaa 3-4 päivää. Siksi kuun tila
+näytetään myös kierron päivänä (`24/28`) ja valaistuna osuutena — nimestä yksin
+ei näe, onko täysikuuhun kaksi vai viisi päivää. Valaistus lasketaan kosinista,
+koska kuu kiertää tasaisesti.
+
 Matkapäivä 1 on kampanjan aloituspäivä, ei nolla. Laskuri ei myöskään ala alusta,
 koska matkaa oli takana jo ennen appin käyttöönottoa: `calendar.startTravelDay` on
 se päivä, josta seuranta alkaa. Kuun `startPhase` on aloituspäivän kohta kierrossa,

@@ -21,6 +21,16 @@ muutokset — sitä ei koskaan kirjoiteta appista:
 | `itemsRemoved` | pohjalistan esineet jotka on poistettu näkyvistä |
 | `itemsCustom` | appissa lisätyt esineet, id-etuliite `c` |
 
+Esine voi antaa taitobonuksen: pohjalistan `bonus`-kenttä, esimerkiksi
+`bonus: [{ skill: 'Musiikki', value: 5 }]`. Bonus näkyy Teot-välilehdellä
+kytkettävänä nappina loitsubonusten rinnalla ja lasketaan heittoon, mutta vain
+kun esine on mukana — poisto tai määrän nollaaminen vie bonuksen mennessään.
+Taidon nimi täsmätään sumeasti, joten `musiikki` löytää lomakkeen rivin.
+
+Vaihtoehto on kirjata bonus lomakkeen `Item`-sarakkeeseen, jolloin se menee
+suoraan taidon kokonaisbonukseen. Ero: lomakkeen arvo on pysyvä, varustelistan
+bonus seuraa esinettä.
+
 Pohjalistan esine ei katoa poistettaessa vaan piiloutuu, ja Varusteet-kortin
 "Palauta" tuo kaikki takaisin. Appissa lisätty esine poistuu lopullisesti, ja
 samalla siivotaan sen kantopaikka ja kappalemäärä — muuten seuraava lisäys voisi

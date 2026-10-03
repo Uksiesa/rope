@@ -292,7 +292,20 @@ const Store = {
       itemsRemoved: (d.itemsRemoved || []).slice(),
       itemsCustom: (d.itemsCustom || []).map(i => Object.assign({}, i)),
       levelUp: d.levelUp ? JSON.parse(JSON.stringify(d.levelUp)) : null,
-      log: d.log.map(e => Object.assign({}, e))
+      // Varusteet myös nimillä, jotta vienti on luettavaa ilman id-kartoitusta.
+      inventory: this.inventory().map(i => ({
+        name: i.name,
+        qty: i.qty,
+        slot: d.itemLocations[i.id] !== undefined ? d.itemLocations[i.id] : (i.location || ''),
+        note: i.note || '',
+        custom: !!i.custom
+      })),
+      log: d.log.map(e => Object.assign({}, e, {
+        date: typeof Calendar !== 'undefined' ? Calendar.format(e.day) : '',
+        moon: typeof Moon !== 'undefined' ? Moon.phaseName(e.day) : '',
+        moonDay: typeof Moon !== 'undefined' ? Moon.cycleDay(e.day) : null,
+        moonLit: typeof Moon !== 'undefined' ? Math.round(Moon.illumination(e.day) * 100) : null
+      }))
     };
   },
 
@@ -324,18 +337,43 @@ const Store = {
     lines.push('food\t' + d.food);
     CONFIG.coins.forEach(c => lines.push(c.key + '\t' + (d.money[c.key] || 0)));
     Object.keys(d.langHours).forEach(k => lines.push('lang:' + k + '\t' + d.langHours[k]));
-    Object.keys(d.itemLocations).forEach(k => lines.push('slot:' + k + '\t' + d.itemLocations[k]));
-    Object.keys(d.itemQty).forEach(k => lines.push('qty:' + k + '\t' + d.itemQty[k]));
-    (d.itemsRemoved || []).forEach(k => lines.push('poistettu:' + k + '\t1'));
-    (d.itemsCustom || []).forEach(i => lines.push('lisatty:' + i.id + TAB +
-      [i.name, i.qty || 1, i.note || ''].join(' · ')));
+
+    // Varusteet omana taulukkonaan ja nimillä: pelkkä id ei kerro lokia
+    // lukevalle mitään. Poistetut ovat mukana, jotta lokista näkee myös sen
+    // mitä matkalla hävisi tai kului loppuun.
     lines.push('');
-    lines.push('day\tdate\tmeals\tlangHours\tspentBase\tnotes');
+    lines.push('VARUSTEET');
+    lines.push(['esine', 'kpl', 'kantopaikka', 'tila', 'tarkenne'].join(TAB));
+    const slotOf = i => d.itemLocations[i.id] !== undefined
+      ? d.itemLocations[i.id] : (i.location || '');
+    this.inventory().forEach(i => lines.push(
+      [i.name, i.qty, slotOf(i) || '-', i.custom ? 'lisatty' : '', i.note || ''].join(TAB)));
+    const removed = d.itemsRemoved || [];
+    ((this.character && this.character.inventory) || [])
+      .filter(i => removed.indexOf(i.id) >= 0)
+      .forEach(i => lines.push([i.name, 0, '-', 'poistettu', i.note || ''].join(TAB)));
+
+    // Päiväkirja. Kuun vaihe on pelin kannalta olennainen, joten se kulkee
+    // päiväyksen rinnalla eikä jää vain appiin.
+    lines.push('');
+    lines.push(['day', 'date', 'kuu', 'kuun pv', 'valaistus %',
+                'meals', 'langHours', 'spentBase', 'notes'].join(TAB));
     d.log.forEach(e => {
       const lang = Object.keys(e.lang || {}).reduce((s, k) => s + e.lang[k], 0);
       const spent = (e.spend || []).reduce((s, x) => s + x.base, 0);
       const notes = (e.spend || []).map(x => x.label).filter(Boolean).join('; ');
-      lines.push([e.day, e.date || '', e.meals === null ? '' : e.meals, lang, spent, notes].join('\t'));
+      // Vaihenimi kattaa useamman päivän, joten kierron päivä ja valaistus
+      // ovat mukana omina sarakkeinaan.
+      const hasMoon = typeof Moon !== 'undefined';
+      const moon = hasMoon ? Moon.phaseName(e.day) : '';
+      const moonDay = hasMoon ? Moon.cycleDay(e.day) + '/' + CONFIG.moon.cycleDays : '';
+      const lit = hasMoon ? Math.round(Moon.illumination(e.day) * 100) : '';
+      // Päiväys lasketaan päivänumerosta eikä lueta merkinnästä: kalenterin
+      // asetukset ovat muuttuneet kesken kampanjan, jolloin tallennettu päiväys
+      // olisi vanhentunut.
+      const date = typeof Calendar !== 'undefined' ? Calendar.format(e.day) : (e.date || '');
+      lines.push([e.day, date, moon, moonDay, lit, e.meals === null ? '' : e.meals,
+                  lang, spent, notes].join(TAB));
     });
     return lines.join('\n');
   },

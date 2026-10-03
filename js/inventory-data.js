@@ -13,6 +13,12 @@
      price    hinta pronssikolikkoina (lähdelistan sarake hinta_br)
      weight   paino kiloina, jos tiedossa — lähdelistassa paino puuttuu
      location kantopaikka, ks. CONFIG.slots
+     bonus    taitobonus jonka esine antaa, yksi tai useampi:
+              { skill: 'Musiikki', value: 5, note: 'vapaa selite' }
+              Bonus näkyy Teot-välilehdellä kytkettävänä nappina ja lasketaan
+              heittoon. Se vaikuttaa vain kun esine on mukana, joten esineen
+              poistaminen tai määrän nollaaminen vie bonuksen mennessään.
+              Taidon nimi täsmätään sumeasti lomakkeen taitolistaan.
 
    Lisää esine antamalla sille uusi id; vanhoja id:itä ei kannata kierrättää,
    koska kantopaikat on sidottu niihin. */
@@ -26,7 +32,8 @@ const INVENTORY_DATA = [
   { id: 'i6',  nro: 6,  name: 'Vyö' },
   { id: 'i7',  nro: 7,  name: 'Viitta (vedenpitävä)' },
   { id: 'i8',  nro: 8,  name: 'Vaatteet' },
-  { id: 'i9',  nro: 9,  name: 'Luuttu' },
+  { id: 'i9',  nro: 9,  name: 'Luuttu', note: '+5',
+    bonus: [{ skill: 'Musiikki', value: 5 }] },
   { id: 'i10', nro: 10, name: 'Kaulahuivi' },
   { id: 'i11', nro: 11, name: 'Makuupussi (kevyt)' },
   { id: 'i12', nro: 12, name: 'Teltta' },

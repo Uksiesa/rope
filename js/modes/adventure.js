@@ -46,6 +46,26 @@ const Moon = {
     return pos / c.cycleDays;
   },
 
+  /** Monesko päivä kierrossa, 1 = uusikuu. Vaihenimi kattaa 3–4 päivää, joten
+      tämä on se luku jolla kuun tilan näkee päivän tarkkuudella. */
+  cycleDay(index) {
+    return Math.round(this.fraction(index) * CONFIG.moon.cycleDays) + 1;
+  },
+
+  /** Valaistun kiekon osuus 0–1. Kuu kiertää tasaisesti, joten osuus saadaan
+      kosinista: uusikuu 0, ensimmäinen neljännes 0,5, täysikuu 1. */
+  illumination(index) {
+    return (1 - Math.cos(2 * Math.PI * this.fraction(index))) / 2;
+  },
+
+  /** Kasvaako vai väheneekö kuu. */
+  waxing(index) { return this.fraction(index) < 0.5; },
+
+  /** Lyhyt muoto listoihin: "Vähenevä sirppi 24/28" */
+  short(index) {
+    return this.phaseName(index) + ' ' + this.cycleDay(index) + '/' + CONFIG.moon.cycleDays;
+  },
+
   phaseName(index) {
     const f = this.fraction(index);
     let best = CONFIG.moon.phases[0], bestD = 1;
@@ -267,11 +287,14 @@ const Adventure = {
 
       if (b.dataset.act === 'target') {
         const now = Store.durable.langTargets[key] || 0;
-        const val = prompt('Montako tuntia tämä taso vaatii? ' + langLabel(key), String(now));
+        const val = prompt('Montako tuntia tämä taso vaatii? 0 = ei tavoitetta. ' + langLabel(key), String(now));
         if (val === null) return;
         const num = parseInt(String(val).replace(',', '.'), 10);
-        if (!Number.isFinite(num) || num <= 0) { toast('Anna tuntimäärä.'); return; }
+        // Nolla on kelpo arvo: se poistaa tavoitteen kieliltä joissa opiskelu ei
+        // ole kesken. Vain negatiivinen tai epäluku hylätään.
+        if (!Number.isFinite(num) || num < 0) { toast('Anna tuntimäärä (0 = ei tavoitetta).'); return; }
         Store.updateDurable(d => { d.langTargets[key] = num; });
+        toast(num ? langLabel(key) + ': tavoite ' + num + ' h.' : langLabel(key) + ': tavoite poistettu.');
         return;
       }
 
@@ -318,11 +341,14 @@ const Adventure = {
     $('#travelDay').textContent = d.day;
     $('#moonGraphic').innerHTML = Moon.svg(d.day, 58);
     $('#moonName').textContent = Moon.phaseName(d.day);
+    $('#moonCycle').textContent = Moon.cycleDay(d.day) + '/' + CONFIG.moon.cycleDays +
+      ' · ' + Math.round(Moon.illumination(d.day) * 100) + ' %';
     const ev = Moon.nextEvents(d.day);
-    $('#moonCountdown').textContent =
-      ev.full === 0 ? 'Täysikuu tänään' :
-      ev.newMoon === 0 ? 'Uusikuu tänään' :
-      'Täysikuuhun ' + ev.full + ' pv';
+    // Molemmat tapahtumat näkyvissä, jotta kuun suunnan näkee ilman laskemista.
+    $('#moonCountdown').textContent = [
+      ev.full === 0 ? 'Täysikuu tänään' : 'täysikuuhun ' + ev.full + ' pv',
+      ev.newMoon === 0 ? 'Uusikuu tänään' : 'uusikuuhun ' + ev.newMoon + ' pv'
+    ].join(' · ');
 
     /* --- Muona --- */
     $('#foodCount').textContent = d.food;
@@ -463,6 +489,13 @@ const Adventure = {
       if (spendTotal) summary.push(Money.formatBase(spendTotal));
 
       const details = el('div', { class: 'log-body' });
+      // Kuun tila päivän tarkkuudella: vaihenimi yksin kattaa 3-4 päivää.
+      details.appendChild(el('div', { class: 'log-row' }, [
+        el('span', { text: 'Kuu' }),
+        el('b', { text: Moon.cycleDay(e.day) + '/' + CONFIG.moon.cycleDays + ' · ' +
+                        Math.round(Moon.illumination(e.day) * 100) + ' % · ' +
+                        (Moon.waxing(e.day) ? 'kasvaa' : 'vähenee') })
+      ]));
       if (langTotal) {
         Object.keys(e.lang).forEach(k => {
           details.appendChild(el('div', { class: 'log-row' }, [
@@ -481,7 +514,8 @@ const Adventure = {
           ? [el('span', { text: 'Paasto' }), el('b', { text: 'ei muonaa' })]
           : [el('span', { text: 'Muonaa kului' }), el('b', { text: '−' + e.meals })]));
       }
-      if (!details.children.length) {
+      // Kuurivi on aina mukana, joten tyhjyys päätellään muista riveistä.
+      if (details.children.length === 1) {
         details.appendChild(el('div', { class: 'log-row' }, [el('span', { text: 'Ei merkintöjä' }), el('b', { text: '—' })]));
       }
 
@@ -489,7 +523,9 @@ const Adventure = {
         el('div', { class: 'log-head' }, [
           el('span', { class: 'log-day', text: 'Pv ' + e.day }),
           el('div', { class: 'log-main' }, [
-            el('span', { class: 'log-date', text: Calendar.formatShort(e.day) + (isToday ? ' · tänään' : '') }),
+            el('span', { class: 'log-date',
+                         text: Calendar.formatShort(e.day) + ' · ' + Moon.short(e.day) +
+                               (isToday ? ' · tänään' : '') }),
             el('span', { class: 'log-summary', text: summary.length ? summary.join(' · ') : 'ei merkintöjä' })
           ]),
           el('span', { class: 'sg-chev', text: '⌄' })

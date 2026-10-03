@@ -92,13 +92,20 @@ const Action = {
     // ja pelaaja voi poiketa siitä yhtä heittoa varten.
     this.spellOff = {};
     const sk = this.skills().find(x => x.id === id);
-    Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, sk)
-      .forEach(b => { if (!b.defaultOn) this.spellOff[b.key] = true; });
+    this.bonusesFor(sk).forEach(b => { if (!b.defaultOn) this.spellOff[b.key] = true; });
     $('#actionRoll').value = '';
     resetSign($('#actionModSign'), $('#actionMod'));
     this.renderSelected();
     $('#selectedCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     setTimeout(() => $('#actionRoll').focus({ preventScroll: true }), 250);
+  },
+
+  /** Taitoon vaikuttavat lisät: aktiiviset loitsut ja mukana olevat varusteet.
+      Molempia käsitellään samalla tavalla, koska pelaajan kannalta kyse on
+      samasta asiasta — kytkettävästä lisästä tähän heittoon. */
+  bonusesFor(skill) {
+    return Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, skill)
+      .concat(Rules.itemSkillBonuses(Store.inventory(), skill));
   },
 
   render() {
@@ -179,15 +186,15 @@ const Action = {
 
     /* --- Aktiivisten loitsujen vaikutus tähän taitoon --- */
     const chips = $('#spellChips');
-    const spellBonuses = Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, s);
+    const bonuses = this.bonusesFor(s);
     chips.innerHTML = '';
-    chips.classList.toggle('hidden', !spellBonuses.length);
-    spellBonuses.forEach(b => {
+    chips.classList.toggle('hidden', !bonuses.length);
+    bonuses.forEach(b => {
       const on = !this.spellOff[b.key];
       chips.appendChild(el('button', {
         class: 'chip spell-chip' + (on ? ' active' : ''),
         'data-spellkey': b.key,
-        text: (on ? '✓ ' : '') + b.spell + ' ' + signed(b.value) + (b.note ? ' · ' + b.note : '')
+        text: (on ? '✓ ' : '') + b.source + ' ' + signed(b.value) + (b.note ? ' · ' + b.note : '')
       }));
     });
 
@@ -208,7 +215,7 @@ const Action = {
     const pending = numOf($('#actionRoll'), null);
     const rolls = this.chain.concat(Number.isFinite(pending) ? [pending] : []);
     const mod = modValue($('#actionMod'));
-    const spellSum = Rules.activeSkillBonuses(Store.character, Store.session.activeSpells, s)
+    const spellSum = this.bonusesFor(s)
       .filter(b => !this.spellOff[b.key])
       .reduce((sum, b) => sum + b.value, 0);
     const out = $('#actionTotal').querySelector('b');
@@ -219,7 +226,7 @@ const Action = {
     if (!rolls.length) {
       out.textContent = '—';
       formula.textContent = 'Bonus ' + signed(s.total + spellSum) +
-        (spellSum ? ' (loitsut ' + signed(spellSum) + ')' : '') + ' — syötä heitto';
+        (spellSum ? ' (lisät ' + signed(spellSum) + ')' : '') + ' — syötä heitto';
       return;
     }
     const roll = rollChainTotal(rolls);
@@ -227,7 +234,7 @@ const Action = {
     formula.textContent =
       (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +
       ' (heitto) ' + signed(s.total) + ' (' + (s.display || s.name) + ')' +
-      (spellSum ? ' ' + signed(spellSum) + ' (loitsut)' : '') +
+      (spellSum ? ' ' + signed(spellSum) + ' (lisät)' : '') +
       (mod ? ' ' + signed(mod) + ' (modi)' : '');
   },
 
