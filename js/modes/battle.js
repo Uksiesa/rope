@@ -10,10 +10,13 @@ const Battle = {
   init() {
     $('#weaponSelect').addEventListener('change', e => {
       Store.update(s => { s.weaponId = e.target.value; });
+      Usage.tweak('ase', e.target.value);
+      Usage.mark('pick');
     });
 
     $('#splitSlider').addEventListener('input', e => {
       Store.update(s => { s.splitPct = parseInt(e.target.value, 10) || 0; });
+      Usage.tweak('jako-liuku', Store.session.splitPct);
     });
 
     $('#splitQuick').addEventListener('click', e => {
@@ -21,6 +24,7 @@ const Battle = {
       if (!b) return;
       haptic();
       Store.update(s => { s.splitPct = parseInt(b.dataset.split, 10); });
+      Usage.tweak('jako-nappi', b.dataset.split);
     });
 
     $('#view-battle').addEventListener('click', e => {
@@ -35,6 +39,7 @@ const Battle = {
       // Todellinen muutos rajauksen jälkeen, ei napin nimellisarvo.
       const delta = Store.session.hpCur - before;
       if (delta) DayLog.add({ t: 'hp', delta: delta });
+      Usage.tweak('osumapisteet', b.dataset.hp);
     });
 
     $('#dbComponents').addEventListener('change', e => {
@@ -50,7 +55,7 @@ const Battle = {
     });
 
     /* --- Kierrokset --- */
-    $('#btnNextRound').addEventListener('click', () => this.nextRound());
+    $('#btnNextRound').addEventListener('click', () => { Usage.tap('kierros'); this.nextRound(); });
     $('#btnPrevRound').addEventListener('click', () => {
       haptic();
       this.justFreed = false;
@@ -446,7 +451,10 @@ const Battle = {
     out.textContent = fmtNum(total);
 
     // Heittoketju päivittää samaa riviä; uusi rivi syntyy kun kenttä on tyhjätty.
-    if (!this.logKey) this.logKey = DayLog.key('atk');
+    if (!this.logKey) {
+      this.logKey = DayLog.key('atk');
+      Usage.roll('battle', { m: target });
+    }
     DayLog.update(this.logKey, {
       t: 'roll',
       target: target,

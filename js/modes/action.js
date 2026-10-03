@@ -14,6 +14,7 @@ const Action = {
     $('#skillSearch').addEventListener('input', e => {
       this.filter.text = e.target.value;
       this.renderList();
+      Usage.search('action', e.target.value, this.matches().length);
     });
 
     $('#catChips').addEventListener('click', e => {
@@ -24,12 +25,24 @@ const Action = {
       this.filter.category = (cat === '*' || this.filter.category === cat) ? null : cat;
       this.renderChips();
       this.renderList();
+      Usage.tweak('taitosuodatin', this.filter.category || 'kaikki');
     });
 
     $('#skillList').addEventListener('click', e => {
       const li = e.target.closest('li[data-id]');
       if (!li) return;
       haptic();
+      // Miten taito löytyi ja kuinka alhaalta: nämä kertovat kannattaako
+      // listan järjestystä tai hakua muuttaa.
+      const rows = $$('#skillList li[data-id]');
+      const idx = rows.indexOf(li);
+      const recent = (Store.session.recentSkills || []).indexOf(li.dataset.id) >= 0;
+      const via = this.filter.text ? 'haku'
+                : this.filter.category ? 'suodatin'
+                : (recent && idx < (Store.session.recentSkills || []).length) ? 'viimeksi'
+                : 'lista';
+      const sk = this.skills().find(x => x.id === li.dataset.id);
+      Usage.pick('action', sk ? (sk.display || sk.name) : li.dataset.id, via, idx);
       this.select(li.dataset.id);
     });
 
@@ -57,7 +70,7 @@ const Action = {
       $('#actionRoll').focus();
     });
 
-    $('#btnMic').addEventListener('click', () => this.toggleMic());
+    $('#btnMic').addEventListener('click', () => { Usage.tap('mikrofoni'); this.toggleMic(); });
     this.setupSpeech();
   },
 
@@ -93,6 +106,7 @@ const Action = {
     this.spellOff = {};
     // Uusi taito = uusi päiväkirjarivi; saman taidon heittoketju päivittää omaansa.
     this.logKey = null;
+    this.rollLogged = false;
     const sk = this.skills().find(x => x.id === id);
     this.bonusesFor(sk).forEach(b => { if (!b.defaultOn) this.spellOff[b.key] = true; });
     $('#actionRoll').value = '';
@@ -236,7 +250,10 @@ const Action = {
     const total = roll + s.total + mod + spellSum;
     out.textContent = fmtNum(total);
 
-    if (!this.logKey) this.logKey = DayLog.key('skill');
+    if (!this.logKey) {
+      this.logKey = DayLog.key('skill');
+      if (!this.rollLogged) { this.rollLogged = true; Usage.roll('action'); }
+    }
     DayLog.update(this.logKey, { t: 'skill', name: s.display || s.name, total: total });
     formula.textContent =
       (rolls.length > 1 ? rollChainText(rolls) + ' = ' + fmtNum(roll) : fmtNum(roll)) +

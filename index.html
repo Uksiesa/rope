@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=35">
+<link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body>
 
@@ -45,6 +45,31 @@
         <button class="ghost full" data-hp="full">Täydet</button>
       </div>
       <div class="hp-penalty" id="hpPenalty"></div>
+    </div>
+
+    <!-- Heitto ensin: sitä toistetaan joka kierros, kun taas ase, jako ja
+         puolustus asetetaan taistelun alussa. -->
+    <div class="card roll-card">
+      <div class="card-head"><h2>Heitto</h2></div>
+      <div class="roll-row">
+        <input type="number" id="battleRoll" inputmode="numeric" class="roll-input" placeholder="d100">
+        <select id="rollTarget" class="select">
+          <option value="attack">+ Hyökkäys</option>
+          <option value="defense">+ Puolustus (DB)</option>
+        </select>
+      </div>
+      <div class="roll-chain" id="battleChain"></div>
+      <div class="roll-row">
+        <button class="sign-btn" id="battleModSign" type="button">+</button>
+        <input type="number" id="battleMod" inputmode="numeric" class="roll-input" placeholder="muut modit">
+        <button class="ghost" id="battleClear">Tyhjennä</button>
+      </div>
+      <div class="roll-total" id="battleTotal">
+        <span class="roll-total-label">Yhteensä</span>
+        <b>—</b>
+      </div>
+      <div class="roll-formula" id="battleFormula"></div>
+      <div class="fumble-warn hidden" id="fumbleWarn"></div>
     </div>
 
     <!-- Kierrokset ja tilavaikutukset -->
@@ -129,29 +154,7 @@
       <div class="db-sum"><span>Parrysta</span><b id="dbParry">0</b></div>
     </div>
 
-    <div class="card roll-card">
-      <div class="card-head"><h2>Heitto</h2></div>
-      <div class="roll-row">
-        <input type="number" id="battleRoll" inputmode="numeric" class="roll-input" placeholder="d100">
-        <select id="rollTarget" class="select">
-          <option value="attack">+ Hyökkäys</option>
-          <option value="defense">+ Puolustus (DB)</option>
-        </select>
-      </div>
-      <div class="roll-chain" id="battleChain"></div>
-      <div class="roll-row">
-        <button class="sign-btn" id="battleModSign" type="button">+</button>
-        <input type="number" id="battleMod" inputmode="numeric" class="roll-input" placeholder="muut modit">
-        <button class="ghost" id="battleClear">Tyhjennä</button>
-      </div>
-      <div class="roll-total" id="battleTotal">
-        <span class="roll-total-label">Yhteensä</span>
-        <b>—</b>
-      </div>
-      <div class="roll-formula" id="battleFormula"></div>
-      <div class="fumble-warn hidden" id="fumbleWarn"></div>
-    </div>
-  </section>
+</section>
 
   <!-- ============================ MATKA ============================ -->
   <section class="view" id="view-adventure">
@@ -502,6 +505,22 @@
 
       <button class="ghost wide danger" id="btnResetDurable">Nollaa kertyvä data</button>
     </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Käyttöloki</h2>
+        <span class="weight-tag" id="usageCount">—</span>
+      </div>
+      <p class="hint">Mittaa appin käyttöä, ei pelin tapahtumia: mihin näkymään aika kuluu,
+        kuinka syvälle listoja vieritetään ja kauanko kestää taidon valinnasta heittoon.
+        Data pysyy tässä laitteessa.</p>
+      <ul class="kv-list" id="usageKv"></ul>
+      <div id="usageViews"></div>
+      <div class="quick-row">
+        <button class="ghost" id="btnCopyUsage">Kopioi loki</button>
+        <button class="ghost danger" id="btnClearUsage">Tyhjennä</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -515,19 +534,20 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=35"></script>
-<script src="js/seed-data.js?v=35"></script>
-<script src="js/inventory-data.js?v=35"></script>
-<script src="js/util.js?v=35"></script>
-<script src="js/rules.js?v=35"></script>
-<script src="js/store.js?v=35"></script>
-<script src="js/sheets.js?v=35"></script>
-<script src="js/modes/battle.js?v=35"></script>
-<script src="js/modes/adventure.js?v=35"></script>
-<script src="js/modes/action.js?v=35"></script>
-<script src="js/modes/magic.js?v=35"></script>
-<script src="js/modes/levelup.js?v=35"></script>
-<script src="js/modes/sheet.js?v=35"></script>
-<script src="js/app.js?v=35"></script>
+<script src="js/config.js?v=37"></script>
+<script src="js/seed-data.js?v=37"></script>
+<script src="js/inventory-data.js?v=37"></script>
+<script src="js/util.js?v=37"></script>
+<script src="js/usage.js?v=37"></script>
+<script src="js/rules.js?v=37"></script>
+<script src="js/store.js?v=37"></script>
+<script src="js/sheets.js?v=37"></script>
+<script src="js/modes/battle.js?v=37"></script>
+<script src="js/modes/adventure.js?v=37"></script>
+<script src="js/modes/action.js?v=37"></script>
+<script src="js/modes/magic.js?v=37"></script>
+<script src="js/modes/levelup.js?v=37"></script>
+<script src="js/modes/sheet.js?v=37"></script>
+<script src="js/app.js?v=37"></script>
 </body>
 </html>

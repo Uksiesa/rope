@@ -36,6 +36,17 @@ maastosuoja) ovat erillinen togglattava lista, ja parry lisätään niiden summa
 Aseella voi olla `can_parry = ei` (jouset) ja `blocks`-lista komponenteista, jotka
 eivät ole käytössä sillä aseella (kilpi jousta käytettäessä).
 
+**Taistelussa heitto on toisena korttina.** Mitattuna puhelinleveydellä
+heittokortti oli 1,7 ruutua alhaalla, vaikka sitä käytetään joka kierros, kun
+taas ase, jako ja puolustus asetetaan kerran taistelun alussa. Nyt osumapisteet,
+heitto ja kierroksen vaihto mahtuvat samalle ruudulle eikä hyökkäys vaadi
+edestakaista vieritystä.
+
+**Käyttöloki on erillään päiväkirjasta.** Päiväkirja kuvaa pelimaailmaa ja
+viedään Sheetiin; käyttöloki kuvaa työkalua ja pysyy laitteella. Siksi oma
+avain ja oma tyhjennys. Mitataan matkaa toiminnon alusta tulokseen, ei
+painalluksia: vain siitä näkee hidastaako appi pelaamista.
+
 **Kalenteri konfiguroitava.** Oletus 12 × 30 päivää ja 28 päivän kuunkierto, koska
 28 = 4 × 7 pitää kuun vaiheet siisteinä. Kuukausien nimet ja pituudet, aloituspäivä
 ja kuun kierron pituus ovat `js/config.js`:ssä; oikea gregoriaaninen kalenteri

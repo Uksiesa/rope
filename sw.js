@@ -4,7 +4,7 @@
    ?v=-parametreja. CACHE hoitaa service workerin välimuistin, ?v= selaimen oman
    HTTP-välimuistin — ilman jälkimmäistä puhelin voi näyttää vanhaa koodia. */
 
-const CACHE = 'totuus-v35';
+const CACHE = 'totuus-v37';
 
 const SHELL = [
   '.',
@@ -14,6 +14,7 @@ const SHELL = [
   'js/seed-data.js',
   'js/inventory-data.js',
   'js/util.js',
+  'js/usage.js',
   'js/rules.js',
   'js/store.js',
   'js/sheets.js',

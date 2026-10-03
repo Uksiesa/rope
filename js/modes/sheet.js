@@ -97,6 +97,18 @@ const SheetView = {
 
     this.initPortrait();
 
+    $('#btnCopyUsage').addEventListener('click', () => {
+      Usage.flush();
+      this.copyText(Usage.exportTsv(), Usage.buf.length + ' tapahtumaa kopioitu.');
+    });
+
+    $('#btnClearUsage').addEventListener('click', () => {
+      if (!confirm('Tyhjennetäänkö käyttöloki? Pelidataan tämä ei vaikuta.')) return;
+      Usage.clear();
+      this.renderUsage();
+      toast('Käyttöloki tyhjennetty.');
+    });
+
     $('#btnCopyDurable').addEventListener('click', () => this.copyDurable());
     $('#btnPushDurable').addEventListener('click', () => this.pushDurable());
     $('#btnPullDurable').addEventListener('click', () => this.pullDurable());
@@ -124,14 +136,19 @@ const SheetView = {
 
   /* ---------------- Kertyvän datan vienti ---------------- */
 
-  async copyDurable() {
-    const tsv = Store.exportDurableTsv();
+  /** Leikepöytä ei ole käytettävissä kaikissa selaimissa, joten varalla on
+      kenttä josta tekstin voi valita käsin. */
+  async copyText(text, done) {
     try {
-      await navigator.clipboard.writeText(tsv);
-      toast('Kertyvä data kopioitu — liitä Sheetiin.');
+      await navigator.clipboard.writeText(text);
+      toast(done);
     } catch (e) {
-      prompt('Kopioi tämä ja liitä Sheetiin:', tsv);
+      prompt('Kopioi tämä:', text);
     }
+  },
+
+  copyDurable() {
+    return this.copyText(Store.exportDurableTsv(), 'Kertyvä data kopioitu — liitä Sheetiin.');
   },
 
   async pushDurable() {
@@ -317,6 +334,7 @@ const SheetView = {
 
     /* --- Varusteet kantopaikoittain --- */
     this.renderInventory();
+    this.renderUsage();
 
     /* --- Tausta --- */
     $('#bioText').textContent = m.bio || '';
@@ -441,6 +459,51 @@ const SheetView = {
     this.toggleItemForm(false);
     DayLog.note('Varuste lisätty · ' + name, qty > 1 ? qty + ' kpl' : '');
     toast(name + ' lisätty.');
+  },
+
+  /** Käyttölokin yhteenveto. Luvut on valittu sen mukaan, mitä käyttöliittymän
+      parantaminen vaatii: mihin aika kuluu, kuinka kaukaa asiat löytyvät ja
+      kauanko kestää valinnasta heittoon. */
+  renderUsage() {
+    const u = Usage.summary();
+    $('#usageCount').textContent = u.events ? u.events + ' tapahtumaa' : 'ei vielä dataa';
+
+    const ms = n => n >= 1000 ? (n / 1000).toFixed(1) + ' s' : n + ' ms';
+    const names = { sheet: 'Hahmo', adventure: 'Matka', action: 'Teot',
+                    battle: 'Taistelu', magic: 'Taika', levelup: 'Seuraava taso' };
+
+    const kv = $('#usageKv');
+    kv.innerHTML = '';
+    const rows = [
+      ['Mitattu', u.events ? new Date(u.from).toLocaleDateString('fi-FI') + ' alkaen' : '—'],
+      ['Hakuja', String(u.searches)],
+      ['Avauksesta valintaan', u.medFind ? ms(u.medFind) + ' (mediaani)' : '—'],
+      ['Valinnasta heittoon', u.medRoll ? ms(u.medRoll) + ' (mediaani)' : '—'],
+      ['Valinnan rivinumero', u.medDepth ? String(u.medDepth) + '. (mediaani)' : '—']
+    ];
+    Object.keys(u.vias).forEach(v => rows.push(['Löytyi: ' + v, String(u.vias[v])]));
+    if (u.topSkills.length) rows.push(['Käytetyin taito', u.topSkills[0].name + ' (' + u.topSkills[0].n + ')']);
+    if (u.topSpells.length) rows.push(['Loitsituin', u.topSpells[0].name + ' (' + u.topSpells[0].n + ')']);
+    rows.forEach(p => kv.appendChild(el('li', {}, [
+      el('span', { text: p[0] }), el('b', { text: p[1] })
+    ])));
+
+    // Näkymäkohtaiset luvut: aika kertoo missä ollaan, vieritys sen miten
+    // kaukana tarvittu asia oli.
+    const box = $('#usageViews');
+    box.innerHTML = '';
+    const keys = Object.keys(u.views).sort((a, b) => u.views[b].ms - u.views[a].ms);
+    if (!keys.length) return;
+    box.appendChild(el('h3', { class: 'sub-head', text: 'Näkymät' }));
+    const list = el('ul', { class: 'kv-list' });
+    keys.forEach(k => {
+      const v = u.views[k];
+      list.appendChild(el('li', {}, [
+        el('span', { text: (names[k] || k) + ' · ' + v.visits + ' avausta' }),
+        el('b', { text: ms(v.ms) + ' · ' + v.scr + ' ruutua' })
+      ]));
+    });
+    box.appendChild(list);
   },
 
   renderInventory() {

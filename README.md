@@ -76,6 +76,7 @@ näyttää vanhaa koodia.
 | Kolikkotyypit ja vaihtokurssi | `js/config.js` → `coins`, `coinRatio` |
 | Muonan lähtömäärä ja varoitusraja | `js/config.js` → `food` |
 | Varustelista | `js/inventory-data.js`; kantopaikat vaihdetaan appissa |
+| Appin oma käyttöloki | Hahmo-välilehden Käyttöloki-kortti, ks. [docs/kayttoloki.md](docs/kayttoloki.md) |
 | Kielten tuntitavoitteet | appissa, Matka-välilehden "Tavoite"-nappi |
 | Avoimen heiton rajat | `js/config.js` → `openEnded` |
 | Bonustaulukot | Sheetin `Rules`-välilehti, oletukset `js/config.js` → `rules` |

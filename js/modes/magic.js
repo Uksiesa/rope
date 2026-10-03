@@ -24,6 +24,7 @@ const Magic = {
     $('#spellSearch').addEventListener('input', e => {
       this.search = e.target.value;
       this.renderList();
+      Usage.search('magic', e.target.value, $$('#spellLevels li[data-spell]').length);
     });
 
     $('#spellLevels').addEventListener('click', e => {
@@ -33,11 +34,14 @@ const Magic = {
         const i = this.closedLists.indexOf(list);
         if (i >= 0) this.closedLists.splice(i, 1); else this.closedLists.push(list);
         this.renderList();
+        Usage.tweak('loitsulista', list);
         return;
       }
       const row = e.target.closest('li[data-spell]');
       if (!row) return;
       haptic();
+      const rows = $$('#spellLevels li[data-spell]');
+      Usage.pick('magic', row.dataset.spell, this.search ? 'haku' : 'lista', rows.indexOf(row));
       this.select(row.dataset.spell);
     });
 
@@ -100,6 +104,7 @@ const Magic = {
     if (lasting) this.activate(sp.name);
 
     DayLog.add({ t: 'spell', name: sp.name, pp: cost.pp, list: sp.list });
+    Usage.log('cast', { v: sp.name, ms: Usage.since('pick') });
 
     toast(sp.name + ' loitsittu — ' + cost.pp + ' pp' +
           (cost.multiplier > 1 ? ' (' + cost.reason + ')' : '') +

@@ -5,6 +5,7 @@ const App = {
   view: 'battle',
 
   async start() {
+    Usage.init();
     Store.load();
 
     // 1) Näytä heti jokin data: välimuisti tai dummy
@@ -49,6 +50,7 @@ const App = {
   },
 
   show(view) {
+    if (typeof Usage !== 'undefined') Usage.enterView(view);
     this.view = view;
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
     $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
