@@ -24,6 +24,15 @@ pelin tapahtumat `events`-listaan:
 | `hp` | Taistelu | osumapisteiden muutos, verenvuoto mukaan lukien |
 | `act` | kaikkialta | muu toiminta: muona, rahat, varusteet, tilavaikutukset, voimapisteet, kieli- ja hahmotasot |
 
+Merkinnän voi poistaa yksitellen päiväkirjan ✕-napista. Poisto koskee vain
+päiväkirjaa: rahat, muona ja osumapisteet jäävät ennalleen, koska väärin
+kirjattu ostos on jo vienyt rahat eikä niiden hiljainen palauttaminen olisi sen
+oikeampaa kuin jättäminen. Poistetun tapahtuman avain jää `removedKeys`-listaan,
+jottei ruudulle jäänyt heitto kirjaa sitä takaisin seuraavassa piirrossa.
+
+Ateriat voi ottaa muualta kuin omista varoista: "+1 pv · ateriat muualta" vie
+päivän eteenpäin, jättää muonalaskurin ennalleen eikä kirjaa paastoa.
+
 Ostokset ovat omassa `spend`-listassaan, mutta Sheet-viennissä ne kulkevat
 samassa tapahtumavirrassa kuin kaikki muu. Toistuva napinpainallus kertyy
 samaan riviin: muonan `+5` ja `+10` näkyvät yhtenä rivinä `+15`.

@@ -187,6 +187,9 @@ const DayLog = {
       if (!Array.isArray(e.events)) e.events = [];
       const prev = e.events.find(x => x.key === key);
       if (prev) { Object.assign(prev, ev); return; }
+      // Käsin poistettu merkintä ei saa palata siksi, että heitto on yhä
+      // ruudulla ja piirtyy uudelleen.
+      if ((e.removedKeys || []).indexOf(key) >= 0) return;
       // Avaimeen on koodattu päivä, jona heitto tehtiin. Jos päivä on sen
       // jälkeen vaihtunut, ruudulle jäänyt heitto ei saa kirjautua uudelleen
       // uuden päivän tapahtumaksi.
@@ -275,18 +278,25 @@ const Adventure = {
       const b = e.target.closest('button[data-advance]');
       if (!b) return;
       haptic();
-      const meals = parseInt(b.dataset.advance, 10);
+      // Tavernassa tai kylässä syöty ei kuluta omia varoja, muttei ole paastokaan.
+      const elsewhere = b.dataset.advance === 'muualta';
+      const meals = elsewhere ? 0 : parseInt(b.dataset.advance, 10);
+      if (elsewhere) DayLog.note('Ateriat muualta', '');
       Store.updateDurable(d => {
         const e2 = DayLog.entry(d, d.day);
-        e2.meals = meals;
-        d.food = Math.max(0, d.food - meals);
+        if (!elsewhere) {
+          e2.meals = meals;
+          d.food = Math.max(0, d.food - meals);
+        }
         d.day += 1;
         DayLog.entry(d, d.day);           // varataan uusi päivä valmiiksi
       });
       const left = Store.durable.food;
-      toast(left <= CONFIG.food.lowWarning
-        ? 'Päivä kului. Muona vähissä: ' + left + '.'
-        : 'Päivä kului — muonavaroja jäljellä ' + left + '.');
+      toast(elsewhere
+        ? 'Päivä kului — ateriat muualta, muonavarat ennallaan (' + left + ').'
+        : left <= CONFIG.food.lowWarning
+          ? 'Päivä kului. Muona vähissä: ' + left + '.'
+          : 'Päivä kului — muonavaroja jäljellä ' + left + '.');
     });
 
     $('#dayBack').addEventListener('click', () => {
@@ -443,6 +453,8 @@ const Adventure = {
     });
 
     $('#logList').addEventListener('click', e => {
+      const del = e.target.closest('button[data-row]');
+      if (del) { this.removeLogRow(del.dataset.day, del.dataset.row); return; }
       const head = e.target.closest('.log-head');
       if (!head) return;
       head.parentElement.classList.toggle('open');
@@ -571,6 +583,38 @@ const Adventure = {
     });
   },
 
+  /** Poistaa yhden päiväkirjarivin. Pelitilaa ei peruta: väärin kirjattu
+      ostos on jo vienyt rahat, eikä niiden hiljainen palauttaminen olisi sen
+      oikeampaa kuin niiden jättäminen. Varmistus kertoo tämän. */
+  removeLogRow(day, spec) {
+    const n = parseInt(day, 10);
+    const i = spec.indexOf(':');
+    const kind = i < 0 ? spec : spec.slice(0, i);
+    const id = i < 0 ? '' : spec.slice(i + 1);
+
+    if (!confirm('Poistetaanko merkintä päiväkirjasta? Rahat, muona ja osumapisteet jäävät ennalleen.')) return;
+    haptic();
+    Store.updateDurable(d => {
+      const entry = d.log.find(x => x.day === n);
+      if (!entry) return;
+      if (kind === 'event') {
+        // Avaimellinen tapahtuma jää muistiin poistettuna, jottei sama heitto
+        // kirjaudu uudelleen seuraavassa piirrossa.
+        const gone = (entry.events || [])[parseInt(id, 10)];
+        if (gone && gone.key) {
+          if (!Array.isArray(entry.removedKeys)) entry.removedKeys = [];
+          entry.removedKeys.push(gone.key);
+        }
+      }
+      if (kind === 'meals') entry.meals = null;
+      else if (kind === 'lang') delete entry.lang[id];
+      else if (kind === 'spend') (entry.spend || []).splice(parseInt(id, 10), 1);
+      else if (kind === 'hp') entry.events = (entry.events || []).filter(x => x.t !== 'hp');
+      else if (kind === 'event') (entry.events || []).splice(parseInt(id, 10), 1);
+    });
+    toast('Merkintä poistettu.');
+  },
+
   renderSpendHint() {
     const amount = numOf($('#spendAmount'), 0);
     const tier = $('#spendTier').value;
@@ -631,59 +675,56 @@ const Adventure = {
       if (spendTotal) summary.push(Money.formatBase(spendTotal));
 
       const details = el('div', { class: 'log-body' });
+
+      // Rivi, jolla on poistonappi kun merkintä on poistettavissa. Poisto
+      // koskee vain päiväkirjaa: rahat, muona ja osumapisteet jäävät ennalleen.
+      const row = (label, value, spec) => {
+        const kids = [el('span', { text: label }), el('b', { text: value })];
+        if (spec) kids.push(el('button', {
+          class: 'log-del', 'data-day': String(e.day), 'data-row': spec,
+          'aria-label': 'Poista merkintä', text: '✕'
+        }));
+        return el('div', { class: 'log-row' + (spec ? ' removable' : '') }, kids);
+      };
+      const evIndex = x => 'event:' + (e.events || []).indexOf(x);
+
       // Kuun tila päivän tarkkuudella: vaihenimi yksin kattaa 3-4 päivää.
-      details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: 'Kuu' }),
-        el('b', { text: Moon.cycleDay(e.day) + '/' + CONFIG.moon.cycleDays + ' · ' +
-                        Math.round(Moon.illumination(e.day) * 100) + ' % · ' +
-                        (Moon.waxing(e.day) ? 'kasvaa' : 'vähenee') })
-      ]));
-      if (langTotal) {
-        Object.keys(e.lang).forEach(k => {
-          details.appendChild(el('div', { class: 'log-row' }, [
-            el('span', { text: langLabel(k) }), el('b', { text: '+' + e.lang[k] + ' h' })
-          ]));
-        });
-      }
-      (e.spend || []).forEach(sp => {
-        details.appendChild(el('div', { class: 'log-row' }, [
-          el('span', { text: sp.label || 'Ostos' }),
-          el('b', { text: '−' + Money.formatBase(sp.base) })
-        ]));
-      });
+      // Lasketaan päivästä, joten sitä ei voi poistaa.
+      details.appendChild(row('Kuu',
+        Moon.cycleDay(e.day) + '/' + CONFIG.moon.cycleDays + ' · ' +
+        Math.round(Moon.illumination(e.day) * 100) + ' % · ' +
+        (Moon.waxing(e.day) ? 'kasvaa' : 'vähenee')));
+
+      Object.keys(e.lang || {}).forEach(k =>
+        details.appendChild(row(langLabel(k), '+' + e.lang[k] + ' h', 'lang:' + k)));
+
+      (e.spend || []).forEach((sp, i) =>
+        details.appendChild(row(sp.label || 'Ostos', '−' + Money.formatBase(sp.base), 'spend:' + i)));
+
       if (e.meals !== null && e.meals !== undefined) {
-        details.appendChild(el('div', { class: 'log-row' }, e.meals === 0
-          ? [el('span', { text: 'Paasto' }), el('b', { text: 'ei muonaa' })]
-          : [el('span', { text: Adventure.mealText(e.meals) }), el('b', { text: '−' + e.meals })]));
+        details.appendChild(e.meals === 0
+          ? row('Paasto', 'ei muonaa', 'meals')
+          : row(Adventure.mealText(e.meals), '−' + e.meals, 'meals'));
       }
 
       // Pelin tapahtumat siinä järjestyksessä kuin ne kirjautuivat.
-      skills.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: 'Taito · ' + x.name }),
-        el('b', { text: fmtNum(x.total) })
-      ])));
-      spells.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: 'Loitsu · ' + x.name }),
-        el('b', { text: '−' + x.pp + ' pp' })
-      ])));
-      rolls.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: (x.target === 'attack' ? 'Hyökkäys · ' : 'Puolustus · ') + x.name +
-                           (x.round ? ' (kr ' + x.round + ')' : '') }),
-        el('b', { text: fmtNum(x.total) })
-      ])));
-      if (hp.lost) details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: 'Osumapisteitä menetetty' }), el('b', { text: '−' + hp.lost })
-      ]));
-      if (hp.healed) details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: 'Osumapisteitä palautui' }), el('b', { text: '+' + hp.healed })
-      ]));
-      acts.forEach(x => details.appendChild(el('div', { class: 'log-row' }, [
-        el('span', { text: x.label }),
-        el('b', { text: DayLog.actValue(x) })
-      ])));
+      skills.forEach(x => details.appendChild(
+        row('Taito · ' + x.name, fmtNum(x.total), evIndex(x))));
+      spells.forEach(x => details.appendChild(
+        row('Loitsu · ' + x.name, '−' + x.pp + ' pp', evIndex(x))));
+      rolls.forEach(x => details.appendChild(
+        row((x.target === 'attack' ? 'Hyökkäys · ' : 'Puolustus · ') + x.name +
+            (x.round ? ' (kr ' + x.round + ')' : ''), fmtNum(x.total), evIndex(x))));
+
+      // Osumapisteet ovat koonti monesta tapahtumasta, joten poisto vie ne kaikki.
+      if (hp.lost) details.appendChild(row('Osumapisteitä menetetty', '−' + hp.lost, 'hp'));
+      if (hp.healed) details.appendChild(row('Osumapisteitä palautui', '+' + hp.healed, 'hp'));
+
+      acts.forEach(x => details.appendChild(row(x.label, DayLog.actValue(x), evIndex(x))));
+
       // Kuurivi on aina mukana, joten tyhjyys päätellään muista riveistä.
       if (details.children.length === 1) {
-        details.appendChild(el('div', { class: 'log-row' }, [el('span', { text: 'Ei merkintöjä' }), el('b', { text: '—' })]));
+        details.appendChild(row('Ei merkintöjä', '—'));
       }
 
       ul.appendChild(el('li', { class: 'log-entry' + (isToday ? ' today' : '') }, [

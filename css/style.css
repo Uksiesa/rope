@@ -722,6 +722,16 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .log-entry { border-bottom: 1px solid var(--line-soft); }
 .log-entry:last-child { border-bottom: 0; }
 .log-head { display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; }
+/* Poistonappi kolmantena lapsena: arvo työnnetään oikeaan laitaan sen viereen,
+   ettei se jää riville keskelle. */
+.log-row.removable { align-items: center; }
+.log-row.removable b { margin-left: auto; text-align: right; }
+.log-del {
+  flex: none; width: 28px; min-height: 28px; padding: 0; margin-left: 8px;
+  font-size: 12px; line-height: 1; color: var(--text-faint); border-color: var(--line-soft);
+}
+.log-del:active { color: var(--blood); }
+
 .log-day {
   flex: none; width: 42px; text-align: center;
   font-family: Georgia, serif; font-size: 12px; color: var(--text-faint);
