@@ -300,10 +300,30 @@ const Adventure = {
 
       if (b.dataset.act === 'rankup') {
         Store.updateDurable(d => {
+          const before = d.langHours[key] || 0;
           d.langRanks[key] = (d.langRanks[key] || 0) + 1;
-          d.langHours[key] = Math.max(0, (d.langHours[key] || 0) - (d.langTargets[key] || 0));
+          d.langHours[key] = Math.max(0, before - (d.langTargets[key] || 0));
+          // Talteen paljonko tunteja kului, jotta noston voi perua tarkasti
+          // myös silloin kun tavoitetta on sen jälkeen muutettu.
+          d.langUndo[key] = { hours: before - d.langHours[key], target: d.langTargets[key] || 0 };
         });
         toast(langLabel(key) + ': taso nousi. Aseta seuraavan tason tuntitavoite.');
+        return;
+      }
+
+      if (b.dataset.act === 'rankdown') {
+        const gained = Store.durable.langRanks[key] || 0;
+        if (!gained) { toast('Tämä taso on lomakkeelta, eikä sitä voi laskea appissa.'); return; }
+        const undo = Store.durable.langUndo[key];
+        const back = undo ? undo.hours : (Store.durable.langTargets[key] || 0);
+        if (!confirm('Perutaanko tasonnosto? ' + langLabel(key) +
+                     (back ? ' — ' + back + ' h palautuu.' : ''))) return;
+        Store.updateDurable(d => {
+          d.langRanks[key] = gained - 1;
+          d.langHours[key] = (d.langHours[key] || 0) + back;
+          delete d.langUndo[key];
+        });
+        toast(langLabel(key) + ': taso peruttu' + (back ? ', ' + back + ' h palautettu.' : '.'));
         return;
       }
 
@@ -419,7 +439,12 @@ const Adventure = {
                            class: 'ghost', text: '−1 h' }),
             el('button', { 'data-lang': lang.name, 'data-track': track, 'data-act': 'target',
                            class: 'ghost', text: 'Tavoite' })
-          ]));
+          ]).concat(gained ? [
+            // Näkyy vain jos tasoa on nostettu appissa — lomakkeen tasoja ei
+            // voi laskea täältä.
+            el('button', { 'data-lang': lang.name, 'data-track': track, 'data-act': 'rankdown',
+                           class: 'ghost', text: 'Peru taso' })
+          ] : []));
 
         rows.push(el('div', { class: 'lang-track-row' + (full ? ' full' : '') }, [
           el('div', { class: 'lt-head' }, [

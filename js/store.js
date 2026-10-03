@@ -108,6 +108,7 @@ const Store = {
       langHours: {},        // { "kieli|spoken"|"kieli|written": kertyneet tunnit }
       langTargets: {},      // sama avain: montako tuntia seuraava taso vaatii
       langRanks: {},        // sama avain: lomakkeen tason päälle ansaitut tasot
+      langUndo: {},         // sama avain: viimeisimmän tasonnoston tiedot peruutusta varten
       log: [],              // päiväkirja, ks. Adventure-moduuli
       itemLocations: {},    // { esineen id: kantopaikka }
       itemQty: {},          // { esineen id: kpl } — korvaa varustelistan määrän
@@ -129,6 +130,7 @@ const Store = {
     this.durable.langHours = d.langHours || {};
     this.durable.langTargets = d.langTargets || {};
     this.durable.langRanks = d.langRanks || {};
+    this.durable.langUndo = d.langUndo || {};
     this.durable.log = Array.isArray(d.log) ? d.log : [];
     this.durable.itemLocations = d.itemLocations || {};
     this.durable.itemQty = d.itemQty || {};
